@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
+#include <memory>
 
 constexpr std::size_t pow2(std::size_t exp) {
   std::size_t ret = 1;
@@ -15,9 +16,9 @@ constexpr std::size_t pow2(std::size_t exp) {
   return ret;
 }
 
-template <typename K, typename V, std::size_t O> class Trie {
+template <typename K, typename V> class Trie {
 public:
-  Trie(std::function<std::deque<std::bitset<O>>(K)> converter)
+  Trie()
       : elem(nullptr), children(std::array<Trie *, O>()), converter(converter) {
   }
 
@@ -38,12 +39,10 @@ public:
   }
 
 private:
-  V *elem;
-  std::array<Trie *, pow2(O)> children;
-  std::function<std::deque<std::bitset<O>>(K)> converter;
+  std::shared_ptr<V> elem;
+  std::array<std::shared_ptr<Trie>, 256> children;
 
-  V insert(std::deque<std::bitset<O>> &key_encoded, V *val,
-           std::size_t key_ind) {
+  V insert(V *val) {
     if (key_ind == key_encoded.size()) {
       auto prev = elem;
       elem = val;
