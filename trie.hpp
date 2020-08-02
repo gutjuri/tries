@@ -7,53 +7,131 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <utility>
 
-constexpr std::size_t pow2(std::size_t exp) {
-  std::size_t ret = 1;
-  for (size_t i = 0; i < exp; i++) {
-    ret *= 2;
-  }
-  return ret;
-}
+template <typename V> class Trie {
+private:
+  friend class Iterator;
+  class TrieNode;
 
-template <typename K, typename V> class Trie {
 public:
-  Trie()
-      : elem(nullptr), children(std::array<Trie *, O>()), converter(converter) {
-  }
+  Trie() : root(nullptr, 'x') {}
 
-  V insert(K key, V val) {
-    std::deque<std::bitset<O>> key_encoded = converter(key);
-    V *val_copied = new V{val};
-    return insert(key_encoded, val_copied, 0);
-  }
-
-  // STATIC CONVERTERS
-  static std::deque<std::bitset<O>> to_key(int key) {
-    std::deque<std::bitset<O>> keybits{};
-    while (key != 0) {
-      keybits.push_front(std::bitset<O>(key & pow2(O)));
-      key >>= O;
+  std::optional<V> insert(std::string key, V to_insert) {
+    TrieNode *insert_at_node = &root;
+    for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
+      if (!insert_at_node->children[key[pos_in_key]]) {
+        insert_at_node->children[key[pos_in_key]] =
+            new TrieNode(insert_at_node, key[pos_in_key]);
+      }
+      insert_at_node = insert_at_node->children[key[pos_in_key]];
     }
-    return keybits;
+    std::optional to_insert_o(to_insert);
+    insert_at_node->elem.swap(to_insert_o);
+    return to_insert_o;
   }
+
+  bool has_key(std::string key) {
+    TrieNode *current_node = &root;
+    for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
+      if (!current_node->children[key[pos_in_key]]) {
+        return false;
+      }
+      current_node = current_node->children[key[pos_in_key]];
+    }
+    return current_node->elem.has_value();
+  }
+
+  class Iterator {
+  public:
+    Iterator(Trie &trie)
+        : current_node(leftmost_bottommost_node(&trie.root)), root(&trie.root) {}
+    Iterator() : current_node(nullptr) {}
+
+    V &operator*() { return current_node->elem.value(); }
+    Iterator& operator++() {
+      advance();
+      return *this;
+    }
+
+    bool operator==(const Iterator& other) {
+      return current_node == other.current_node;
+    }
+
+    bool operator!=(const Iterator& other) {
+      return !(*this == other);
+    }
+
+  private:
+    void advance() { next_postorder(); }
+
+    void next_postorder() {
+      if (current_node == root) {
+        current_node = nullptr;
+        return;
+      }
+
+      for (std::size_t child_i = current_node->prefixed_by + 1; child_i < 256;
+           ++child_i) {
+        TrieNode *next =
+            leftmost_bottommost_node(current_node->parent->children[child_i]);
+        if (next && next->elem.has_value()) {
+          current_node = next;
+          return;
+        }
+      }
+      if (current_node->parent->elem.has_value()) {
+        current_node = current_node->parent;
+        return;
+      }
+      current_node = current_node->parent;
+      next_postorder();
+    }
+
+    // Returns a pointer to the leftmost-bottommost node in the structure
+    // (i.e. the one that is to be traversed first in this structure).
+    static TrieNode *leftmost_bottommost_node(TrieNode *subroot) {
+      if (!subroot) {
+        return nullptr;
+      }
+      TrieNode *leftmost = nullptr;
+      for (auto child : subroot->children) {
+        leftmost = leftmost_bottommost_node(child);
+        if (leftmost && leftmost->elem.has_value()) {
+          return leftmost;
+        }
+      }
+      return subroot->elem.has_value() ? subroot : nullptr;
+    }
+
+    TrieNode *current_node;
+    const TrieNode *root;
+  };
+
+  Iterator begin() { return Iterator(*this); }
+
+  Iterator end() { return Iterator(); }
 
 private:
-  std::shared_ptr<V> elem;
-  std::array<std::shared_ptr<Trie>, 256> children;
+  TrieNode root;
 
-  V insert(V *val) {
-    if (key_ind == key_encoded.size()) {
-      auto prev = elem;
-      elem = val;
-      return *prev;
-    }
-    auto next_subtrie_index = key_encoded[key_ind].to_ulong();
-    if (!children[next_subtrie_index]) {
-      children[next_subtrie_index] = new Trie(converter);
-    }
-    return children[next_subtrie_index]->insert(key_encoded, val, key_ind + 1);
-  }
+  class TrieNode {
+    friend class Trie;
+    friend class Iterator;
+
+  public:
+    TrieNode(TrieNode *parent, char prefixed_by)
+        : elem(), children(), parent(parent), prefixed_by(prefixed_by) {}
+
+    ~TrieNode() {}
+
+  private:
+    std::optional<V> elem;
+    std::array<TrieNode *, 256> children;
+    TrieNode *parent;
+    char prefixed_by;
+  };
 };
 
 #endif
