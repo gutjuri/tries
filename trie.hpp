@@ -2,9 +2,7 @@
 #define TRIE_HPP
 
 #include <array>
-#include <bitset>
 #include <cstdlib>
-#include <deque>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -16,7 +14,7 @@ private:
   class TrieNode;
 
 public:
-  Trie() : root(nullptr, 'x') {}
+  Trie() : root(nullptr, '\0') {}
 
   std::optional<V> insert(std::string key, V to_insert) {
     TrieNode *insert_at_node = &root;
