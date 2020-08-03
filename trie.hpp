@@ -37,7 +37,7 @@ public:
     TrieNode *current_node = &root;
     for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
       if (!current_node->children[key[pos_in_key]]) {
-        //
+        return std::optional<V>();
       }
       current_node = current_node->children[key[pos_in_key]];
     }

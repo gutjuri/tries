@@ -104,9 +104,17 @@ TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
   trie.insert("B", "B");
   trie.insert("AB", "AB");
 
-  REQUIRE(trie.at("A") == "A");
-  REQUIRE(trie.at("B") == "B");
-  REQUIRE(trie.at("AB") == "AB");
+  SECTION("Query for elements that are really there") {
+    REQUIRE(trie.at("A") == "A");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "AB");
+  }
+
+  SECTION("Query for elements that are not there") {
+    REQUIRE(trie.at("C") == std::optional<std::string>());
+    REQUIRE(trie.at("") == std::optional<std::string>());
+    REQUIRE(trie.at("ABC") == std::optional<std::string>());
+  }
 }
 
 TEST_CASE("Replace elements in the trie", "[trie replace]") {
@@ -142,13 +150,13 @@ TEST_CASE("Replace elements in the trie", "[trie replace]") {
     REQUIRE(trie.at("B") == "B");
     REQUIRE(trie.at("AB") == "AB");
 
-    REQUIRE(trie.insert("A", "C") == std::optional<std::string>("A"));
+    REQUIRE(trie.insert("A", "C") == "A");
 
     REQUIRE(trie.at("A") == "C");
     REQUIRE(trie.at("B") == "B");
     REQUIRE(trie.at("AB") == "AB");
 
-    REQUIRE(trie.insert("AB", "CD") == std::optional<std::string>("AB"));
+    REQUIRE(trie.insert("AB", "CD") == "AB");
 
     // use return value as lvalue
     std::optional<std::string> returned = trie.insert("AB", "Hello World!");
