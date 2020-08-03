@@ -3,23 +3,27 @@
 
 #include <array>
 #include <cstdlib>
-#include <functional>
-#include <memory>
 #include <optional>
 #include <utility>
 
-template <typename V> class Trie {
+template <typename K, typename V> class Trie {
 private:
   friend class Iterator;
   class TrieNode;
+  friend class TrieNode;
+
+  // KeyContent is the type of the symbols in the key.
+  // For example, if the key is a std::string, then KeyContent is char.
+  // If the key is a vector<int>, then KeyContent is int.
+  using KeyContent = typename std::remove_reference<decltype(K{}[0])>::type;
 
 public:
-  Trie() : root(nullptr, '\0') {}
+  Trie() : root(nullptr, KeyContent{}) {}
   ~Trie() {
     
   }
 
-  std::optional<V> insert(std::string key, V to_insert) {
+  std::optional<V> insert(K key, V to_insert) {
     TrieNode *insert_at_node = &root;
     for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
       if (!insert_at_node->children[key[pos_in_key]]) {
@@ -33,7 +37,7 @@ public:
     return to_insert_o;
   }
 
-  std::optional<V> at(std::string key) {
+  std::optional<V> at(K key) {
     TrieNode *current_node = &root;
     for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
       if (!current_node->children[key[pos_in_key]]) {
@@ -44,7 +48,7 @@ public:
     return current_node ? current_node -> elem : std::optional<V>();
   }
 
-  bool has_key(std::string key) {
+  bool has_key(K key) {
     TrieNode *current_node = &root;
     for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
       if (!current_node->children[key[pos_in_key]]) {
@@ -133,7 +137,7 @@ private:
     friend class Iterator;
 
   public:
-    TrieNode(TrieNode *parent, char prefixed_by)
+    TrieNode(TrieNode *parent, KeyContent prefixed_by)
         : elem(), children(), parent(parent), prefixed_by(prefixed_by) {}
 
     ~TrieNode() {
@@ -146,7 +150,7 @@ private:
     std::optional<V> elem;
     std::array<TrieNode *, 256> children;
     TrieNode *parent;
-    char prefixed_by;
+    KeyContent prefixed_by;
   };
 };
 

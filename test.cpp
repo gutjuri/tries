@@ -9,18 +9,18 @@
 
 TEST_CASE("Construct and destroy trie", "[trie]") {
   SECTION("String trie") {
-    { Trie<std::string> t{}; }
+    { Trie<std::string, std::string> t{}; }
   }
   SECTION("int trie") {
-    { Trie<int> t{}; }
+    { Trie<std::string, int> t{}; }
   }
   SECTION("char trie") {
-    { Trie<char> t{}; }
+    { Trie<std::vector<int>, char> t{}; }
   }
 }
 
 TEST_CASE("Add elements to trie and check if they're in the trie", "[trie]") {
-  Trie<std::string> trie{};
+  Trie<std::string, std::string> trie{};
   trie.insert("key1", "hello");
   trie.insert("key2", "world");
   trie.insert("otherPrefixKey", "!!");
@@ -37,7 +37,7 @@ TEST_CASE("Add elements to trie and check if they're in the trie", "[trie]") {
 }
 
 TEST_CASE("Iterating over a trie", "[trie iterator]") {
-  Trie<std::string> trie{};
+  Trie<std::string, std::string> trie{};
   trie.insert("A", "A");
   trie.insert("B", "B");
   trie.insert("C", "C");
@@ -99,7 +99,7 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
 }
 
 TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
-  Trie<std::string> trie{};
+  Trie<std::string, std::string> trie{};
   trie.insert("A", "A");
   trie.insert("B", "B");
   trie.insert("AB", "AB");
@@ -119,7 +119,7 @@ TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
 
 TEST_CASE("Replace elements in the trie", "[trie replace]") {
   SECTION("Without checking the return value") {
-    Trie<std::string> trie{};
+    Trie<std::string, std::string> trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
     trie.insert("AB", "AB");
@@ -141,7 +141,7 @@ TEST_CASE("Replace elements in the trie", "[trie replace]") {
     REQUIRE(trie.at("AB") == "CD");
   }
   SECTION("With checking the return value") {
-    Trie<std::string> trie{};
+    Trie<std::string, std::string> trie{};
     REQUIRE(trie.insert("A", "A") == std::optional<std::string>());
     REQUIRE(trie.insert("B", "B") == std::optional<std::string>());
     REQUIRE(trie.insert("AB", "AB") == std::optional<std::string>());
@@ -165,5 +165,25 @@ TEST_CASE("Replace elements in the trie", "[trie replace]") {
     REQUIRE(trie.at("A") == "C");
     REQUIRE(trie.at("B") == "B");
     REQUIRE(trie.at("AB") == "Hello World!");
+  }
+}
+
+TEST_CASE("Checking all with key type vector<int>",
+          "[trie<vector<int>, std::string>]") {
+  Trie<std::vector<int>, std::string> trie{};
+  trie.insert({1, 2}, "A");
+  trie.insert({1}, "B");
+  trie.insert({1, 2, 3}, "AB");
+
+  SECTION("Query for elements that are really there") {
+    REQUIRE(trie.at({1, 2}) == "A");
+    REQUIRE(trie.at({1}) == "B");
+    REQUIRE(trie.at({1, 2, 3}) == "AB");
+  }
+
+  SECTION("Query for elements that are not there") {
+    REQUIRE(trie.at({}) == std::optional<std::string>());
+    REQUIRE(trie.at({4, 5}) == std::optional<std::string>());
+    REQUIRE(trie.at({1, 3}) == std::optional<std::string>());
   }
 }
