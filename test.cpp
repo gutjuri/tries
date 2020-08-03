@@ -3,6 +3,7 @@
 #include "trie.hpp"
 
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -44,9 +45,10 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
   trie.insert("BB", "BB");
   trie.insert("CC", "CC");
 
+  std::vector<std::string> expected{"AA", "A", "BB", "B", "CC", "C"};
+
   SECTION("Iterating once with for-each loop") {
     std::vector<std::string> results{};
-    std::vector<std::string> expected{"AA", "A", "BB", "B", "CC", "C"};
     for (auto x : trie) {
       results.push_back(x);
     }
@@ -60,11 +62,100 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
     auto it2 = trie.begin();
     auto it2_end = trie.end();
 
-    REQUIRE(*it1 == "AA");
-    REQUIRE(*it2 == "AA");
+    REQUIRE(*it1 == expected[0]);
+    REQUIRE(*it2 == expected[0]);
 
     ++it1;
-    REQUIRE(*it1 == "A");
-    REQUIRE(*it2 == "AA");
+    REQUIRE(*it1 == expected[1]);
+    REQUIRE(*it2 == expected[0]);
+
+    ++++it2;
+    REQUIRE(*it1 == expected[1]);
+    REQUIRE(*it2 == expected[2]);
+    REQUIRE(it1 != it2);
+
+    auto it3 = trie.begin();
+    REQUIRE(*it3 == expected[0]);
+
+    ++it1;
+    REQUIRE(it1 == it2);
+    REQUIRE(it1 != it3);
+    REQUIRE(it2 != it3);
+
+    for (std::size_t i = 0; i < 3; ++i) {
+      ++it1;
+      ++it2;
+    }
+    REQUIRE(*it1 == expected[5]);
+    REQUIRE(*it2 == expected[5]);
+
+    ++it2;
+    ++it1;
+    REQUIRE(it1 == it1_end);
+    REQUIRE(it2 == it2_end);
+    REQUIRE(it1 == trie.end());
+    REQUIRE(it2 == trie.end());
+  }
+}
+
+TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
+  Trie<std::string> trie{};
+  trie.insert("A", "A");
+  trie.insert("B", "B");
+  trie.insert("AB", "AB");
+
+  REQUIRE(trie.at("A") == "A");
+  REQUIRE(trie.at("B") == "B");
+  REQUIRE(trie.at("AB") == "AB");
+}
+
+TEST_CASE("Replace elements in the trie", "[trie replace]") {
+  SECTION("Without checking the return value") {
+    Trie<std::string> trie{};
+    trie.insert("A", "A");
+    trie.insert("B", "B");
+    trie.insert("AB", "AB");
+
+    REQUIRE(trie.at("A") == "A");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "AB");
+
+    trie.insert("A", "C");
+
+    REQUIRE(trie.at("A") == "C");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "AB");
+
+    trie.insert("AB", "CD");
+
+    REQUIRE(trie.at("A") == "C");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "CD");
+  }
+  SECTION("With checking the return value") {
+    Trie<std::string> trie{};
+    REQUIRE(trie.insert("A", "A") == std::optional<std::string>());
+    REQUIRE(trie.insert("B", "B") == std::optional<std::string>());
+    REQUIRE(trie.insert("AB", "AB") == std::optional<std::string>());
+
+    REQUIRE(trie.at("A") == "A");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "AB");
+
+    REQUIRE(trie.insert("A", "C") == std::optional<std::string>("A"));
+
+    REQUIRE(trie.at("A") == "C");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "AB");
+
+    REQUIRE(trie.insert("AB", "CD") == std::optional<std::string>("AB"));
+
+    // use return value as lvalue
+    std::optional<std::string> returned = trie.insert("AB", "Hello World!");
+    REQUIRE(returned.value() == "CD");
+
+    REQUIRE(trie.at("A") == "C");
+    REQUIRE(trie.at("B") == "B");
+    REQUIRE(trie.at("AB") == "Hello World!");
   }
 }

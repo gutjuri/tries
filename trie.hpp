@@ -15,6 +15,9 @@ private:
 
 public:
   Trie() : root(nullptr, '\0') {}
+  ~Trie() {
+    
+  }
 
   std::optional<V> insert(std::string key, V to_insert) {
     TrieNode *insert_at_node = &root;
@@ -28,6 +31,17 @@ public:
     std::optional to_insert_o(to_insert);
     insert_at_node->elem.swap(to_insert_o);
     return to_insert_o;
+  }
+
+  std::optional<V> at(std::string key) {
+    TrieNode *current_node = &root;
+    for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
+      if (!current_node->children[key[pos_in_key]]) {
+        //
+      }
+      current_node = current_node->children[key[pos_in_key]];
+    }
+    return current_node ? current_node -> elem : std::optional<V>();
   }
 
   bool has_key(std::string key) {
@@ -53,11 +67,11 @@ public:
       return *this;
     }
 
-    bool operator==(const Iterator& other) {
+    bool operator==(const Iterator& other) const {
       return current_node == other.current_node;
     }
 
-    bool operator!=(const Iterator& other) {
+    bool operator!=(const Iterator& other) const {
       return !(*this == other);
     }
 
@@ -122,7 +136,11 @@ private:
     TrieNode(TrieNode *parent, char prefixed_by)
         : elem(), children(), parent(parent), prefixed_by(prefixed_by) {}
 
-    ~TrieNode() {}
+    ~TrieNode() {
+      for(auto ch : children) {
+        delete ch;
+      }
+    }
 
   private:
     std::optional<V> elem;

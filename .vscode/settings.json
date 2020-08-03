@@ -45,6 +45,20 @@
     "typeinfo": "cpp",
     "bitset": "cpp",
     "iostream": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "chrono": "cpp",
+    "condition_variable": "cpp",
+    "cstring": "cpp",
+    "ctime": "cpp",
+    "map": "cpp",
+    "set": "cpp",
+    "ratio": "cpp",
+    "future": "cpp",
+    "iomanip": "cpp",
+    "mutex": "cpp",
+    "shared_mutex": "cpp",
+    "thread": "cpp",
+    "cinttypes": "cpp",
+    "variant": "cpp"
   }
 }
