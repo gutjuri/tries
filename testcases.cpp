@@ -1,7 +1,6 @@
 #include "catch2/catch.hpp"
 #include "trie.hpp"
 
-#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
