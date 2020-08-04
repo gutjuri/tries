@@ -59,6 +59,7 @@
     "shared_mutex": "cpp",
     "thread": "cpp",
     "cinttypes": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "list": "cpp"
   }
 }

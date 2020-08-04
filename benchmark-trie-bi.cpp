@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 
 #include "catch2/catch.hpp"
-#include "trie.hpp"
+#include <ext/pb_ds/assoc_container.hpp>
 
 #include <cstdlib>
 #include <fstream>
@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+using namespace __gnu_pbds;
 
 std::vector<std::pair<std::string, std::size_t>> read_enable1() {
   std::vector<std::pair<std::string, std::size_t>> v(127824);
@@ -21,9 +22,9 @@ std::vector<std::pair<std::string, std::size_t>> read_enable1() {
   return v;
 }
 
-Trie<std::string, std::size_t>
+trie<std::string, std::size_t>
 prepare_enable1_trie(std::vector<std::pair<std::string, std::size_t>> &v) {
-  Trie<std::string, std::size_t> trie;
+  trie<std::string, std::size_t> trie;
   for (auto p : v) {
     trie[p.first] = p.second;
   }
@@ -37,7 +38,7 @@ TEST_CASE("Make trie from vector") {
 
 TEST_CASE("Query large trie") {
   auto v = read_enable1();
-  Trie<std::string, std::size_t> trie = prepare_enable1_trie(v);
+  trie<std::string, std::size_t> trie = prepare_enable1_trie(v);
 
   BENCHMARK("Query for existent short word") { return trie["ab"]; };
   BENCHMARK("Query for existent long word") {
@@ -51,7 +52,7 @@ TEST_CASE("Query large trie") {
 
 TEST_CASE("Iterate over trie") {
   auto v = read_enable1();
-  Trie<std::string, std::size_t> trie = prepare_enable1_trie(v);
+  trie<std::string, std::size_t> trie = prepare_enable1_trie(v);
 
   BENCHMARK("Sum of word lengths") {
     std::size_t sum = 0;
