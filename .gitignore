@@ -35,4 +35,4 @@ out/*
 *.gcov
 *.gcda
 *.gcno
-
+*-exe
