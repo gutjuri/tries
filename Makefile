@@ -1,5 +1,5 @@
-CC=g++
-CFLAGS=--std=c++17 -Wall
+CC=g++-10
+CFLAGS=--std=c++20 -Wall
 
 test_main.o: test.cpp
 	$(CC) $(CFLAGS) -O3 test.cpp -c -o test_main.o

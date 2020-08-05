@@ -8,17 +8,57 @@
 #include <optional>
 #include <utility>
 
-template <typename K, typename V> class Trie {
+// Default comverter that is used for all KeyTypes that are
+// naturally suited to be keys in a trie. This includes all keys that support
+// size() and operator[].
+template <typename KeyType> struct DummyConverter {
+  // KeyContent is the type of the symbols in the key.
+  // For example, if the key is a std::string, then KeyContent is char.
+  // If the key is a vector<int>, then KeyContent is int.
+  using KeyContent =
+      typename std::remove_reference<decltype(KeyType{}[0])>::type;
+
+  static KeyContent get_at_index(KeyType key, std::size_t ind) {
+    return key[ind];
+  }
+  static std::size_t size(KeyType key) { return key.size(); }
+};
+
+// An example converter that enables ints as keys by interpreting an int as a
+// sequence of bits. Note that the the lowest-valued bit is considered the first
+// symbol and the highest-values bit represents the last symbol.
+// This means, that e.g. the ints with prefix '0' are all even-valued ints, and
+// all ints with prefix '00' are all ints divisible by 4.
+struct IntBitwiseConverter {
+  using KeyContent = bool;
+  static KeyContent get_at_index(int key, std::size_t ind) {
+    return key & (1 << ind);
+  }
+
+  static std::size_t size(int key) {
+    return sizeof(key) * 8; // assuming that char has 8 bits.
+  }
+};
+
+template <typename C, typename KeyType>
+concept ConverterType = requires(KeyType key, std::size_t ind) {
+  { C::size(key) }
+  ->std::same_as<std::size_t>;
+
+  { C::get_at_index(key, ind) }
+  ->std::same_as<typename C::KeyContent>;
+};
+
+template <typename KeyType, typename ValueType,
+          ConverterType<KeyType> Converter = DummyConverter<KeyType>>
+class Trie {
 private:
   class Iterator;
   friend class Iterator;
   class TrieNode;
   friend class TrieNode;
 
-  // KeyContent is the type of the symbols in the key.
-  // For example, if the key is a std::string, then KeyContent is char.
-  // If the key is a vector<int>, then KeyContent is int.
-  using KeyContent = typename std::remove_reference<decltype(K{}[0])>::type;
+  using KeyContent = Converter::KeyContent;
 
 public:
   Trie() : root(std::make_shared<TrieNode>(nullptr, KeyContent{})) {}
@@ -42,29 +82,29 @@ public:
   // This method returns an optional that contains the
   // value previously associated with the given key, or an empty one
   // if there is no such value.
-  std::optional<V> insert(K key, V to_insert) {
+  std::optional<ValueType> insert(KeyType key, ValueType to_insert) {
     std::shared_ptr<TrieNode> insert_at_node = mk_path_to_node(key);
     std::optional to_insert_o(to_insert);
     insert_at_node->elem.swap(to_insert_o);
     return to_insert_o;
   }
 
-  std::optional<V> at(K key) const {
+  std::optional<ValueType> at(KeyType key) const {
     std::shared_ptr<TrieNode> current_node = find_node(key);
-    return current_node ? current_node->elem : std::optional<V>();
+    return current_node ? current_node->elem : std::optional<ValueType>();
   }
 
-  std::optional<V> &operator[](K key) {
+  std::optional<ValueType> &operator[](KeyType key) {
     std::shared_ptr<TrieNode> insert_at_node = mk_path_to_node(key);
     return insert_at_node->elem;
   }
 
-  const std::optional<V> &operator[](K key) const {
+  const std::optional<ValueType> &operator[](KeyType key) const {
     std::shared_ptr<TrieNode> insert_at_node = mk_path_to_node(key);
     return insert_at_node->elem;
   }
 
-  bool has_key(K key) {
+  bool has_key(KeyType key) {
     std::shared_ptr<TrieNode> target_node = find_node(key);
     return target_node && target_node->elem.has_value();
   }
@@ -73,9 +113,14 @@ public:
 
   Iterator end() { return Iterator(); }
 
-  Trie<K, V> subtrie(K prefix) {
+  Iterator subtrie_iterator(KeyType prefix) {
     auto subroot = find_node(prefix);
-    return Trie(subroot);
+    return Iterator(subroot);
+  }
+
+  Iterator subtrie_iterator(KeyType prefix, std::size_t len) {
+    auto subroot = find_node(prefix, len);
+    return Iterator(subroot);
   }
 
 private:
@@ -87,13 +132,19 @@ private:
   // Returns a shared_ptr pointing to the node corresponding
   // to the specified key. If no such key exists in the trie,
   // nullptr is returned.
-  std::shared_ptr<TrieNode> find_node(K key) const {
-    auto current_node = root;
-    for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
-      if (!current_node->has_child(key[pos_in_key])) {
+  std::shared_ptr<TrieNode> find_node(KeyType key) const {
+    return find_node(key, Converter::size(key));
+  }
+
+  std::shared_ptr<TrieNode> find_node(KeyType key, std::size_t key_size) const {
+    std::shared_ptr<TrieNode> current_node = root;
+
+    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
+      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
+      if (!current_node->has_child(next_node_index)) {
         return nullptr;
       }
-      current_node = current_node->children.at(key[pos_in_key]);
+      current_node = current_node->children.at(next_node_index);
     }
     return current_node;
   }
@@ -101,14 +152,18 @@ private:
   // Makes a path to the node corresponding to the key.
   // If the entire path or parts are already available,
   // they are reused.
-  std::shared_ptr<TrieNode> mk_path_to_node(K key) {
+  std::shared_ptr<TrieNode> mk_path_to_node(KeyType key) {
     std::shared_ptr<TrieNode> current_node = root;
-    for (std::size_t pos_in_key = 0; pos_in_key != key.size(); pos_in_key++) {
-      if (!current_node->has_child(key[pos_in_key])) {
-        current_node->children[key[pos_in_key]] = std::shared_ptr<TrieNode>(
-            new TrieNode(current_node.get(), key[pos_in_key]));
+    std::size_t key_size = Converter::size(key);
+
+    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
+      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
+
+      if (!current_node->has_child(next_node_index)) {
+        current_node->children[next_node_index] = std::shared_ptr<TrieNode>(
+            new TrieNode(current_node.get(), next_node_index));
       }
-      current_node = current_node->children.at(key[pos_in_key]);
+      current_node = current_node->children.at(next_node_index);
     }
     current_node->key = key;
     return current_node;
@@ -123,14 +178,14 @@ private:
 
     Iterator() : current_node(nullptr) {}
 
-    std::pair<K, V> operator*() {
-      return std::pair<K, V>(current_node->key.value(),
-                             current_node->elem.value());
+    std::pair<KeyType, ValueType> operator*() {
+      return std::pair<KeyType, ValueType>(current_node->key.value(),
+                                           current_node->elem.value());
     }
 
-    K key() { return current_node->key.value(); }
+    KeyType key() { return current_node->key.value(); }
 
-    V &value() { return current_node->elem.value(); }
+    ValueType &value() { return current_node->elem.value(); }
 
     Iterator &operator++() {
       advance();
@@ -215,8 +270,8 @@ private:
     }
 
   private:
-    std::optional<V> elem;
-    std::optional<K> key;
+    std::optional<ValueType> elem;
+    std::optional<KeyType> key;
     std::map<KeyContent, std::shared_ptr<TrieNode>> children;
     TrieNode *parent;
     KeyContent prefixed_by;

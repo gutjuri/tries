@@ -60,6 +60,10 @@
     "thread": "cpp",
     "cinttypes": "cpp",
     "variant": "cpp",
-    "list": "cpp"
+    "list": "cpp",
+    "compare": "cpp",
+    "concepts": "cpp",
+    "ranges": "cpp",
+    "stop_token": "cpp"
   }
 }

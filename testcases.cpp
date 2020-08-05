@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <iostream>
 
 TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   SECTION("Default constructors") {
@@ -145,8 +146,8 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
     trie.insert("ABC", "D");
     trie.insert("X", "X");
 
-    for (auto x : trie.subtrie("A")) {
-      received.push_back(x);
+    for (auto it = trie.subtrie_iterator("A"); it != trie.end(); ++it) {
+      received.push_back(*it);
     }
 
     REQUIRE(received == expected);
@@ -283,4 +284,24 @@ TEST_CASE("Checking all with key type vector<int>",
     REQUIRE(trie.at({4, 5}) == std::optional<std::string>());
     REQUIRE(trie.at({1, 3}) == std::optional<std::string>());
   }
+}
+
+TEST_CASE("Using the non-default key-converter", "[trie converter]") {
+  Trie<int, std::string, IntBitwiseConverter> trie{};
+  trie.insert(1, "A");
+  trie.insert(0, "B");
+  trie.insert(100, "C");
+  trie.insert(123873, "D");
+  REQUIRE(trie.at(1) == "A");
+  REQUIRE(trie[0] == "B");
+  REQUIRE(trie[100] == "C");
+  REQUIRE(trie[123873] == "D");
+
+  //iterate over all even keys
+  auto it = trie.subtrie_iterator(0, 1);
+  REQUIRE((*it).first == 0);
+  ++it;
+  REQUIRE((*it).first == 100);
+  ++it;
+  REQUIRE(it == trie.end());
 }
