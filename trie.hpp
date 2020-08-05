@@ -1,12 +1,26 @@
 #ifndef TRIE_HPP
 #define TRIE_HPP
 
-#include <array>
 #include <cstdlib>
-#include <map>
 #include <memory>
 #include <optional>
 #include <utility>
+
+#ifdef TRIE_USE_ARRAY
+#include <array>
+#define STORAGE_TYPE std::array<std::shared_ptr<TrieNode>, 256>
+#define FIND(x) [(x)]
+
+#elif TRIE_USE_UNORDERED_MAP
+#include <map>
+#define STORAGE_TYPE std::unordered_map<KeyContent, std::shared_ptr<TrieNode>>
+#define FIND(x) .find((x))
+
+#else
+#include <map>
+#define STORAGE_TYPE std::map<KeyContent, std::shared_ptr<TrieNode>>
+#define FIND(x) .find((x))
+#endif
 
 // Default converter that is used for all KeyTypes that are
 // naturally suited to be keys in a trie. This includes all keys that support
@@ -57,7 +71,7 @@ private:
   friend class TrieNode;
 
   using KeyContent = Converter::KeyContent;
-  using StorageType = std::map<KeyContent, std::shared_ptr<TrieNode>>;
+  using StorageType = STORAGE_TYPE;
 
 public:
   class Iterator;
@@ -272,7 +286,7 @@ private:
     TrieNode &operator=(const TrieNode &other) = delete;
 
     bool has_child(KeyContent ind) const {
-      return children.end() != children.find(ind);
+      return children.end() != children FIND(ind);
     }
 
   private:
