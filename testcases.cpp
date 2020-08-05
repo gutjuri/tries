@@ -26,6 +26,15 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
     REQUIRE(trie.at("A") == "A");
+
+    newTrie["B"] = "C";
+    auto it = newTrie.begin();
+    REQUIRE(it.value() == "AB");
+    ++it;
+    REQUIRE(it.value() == "X");
+    ++it;
+    REQUIRE(it.value() == "C");
+
   }
 
   SECTION("move constructor") {

@@ -8,7 +8,7 @@
 #include <optional>
 #include <utility>
 
-// Default comverter that is used for all KeyTypes that are
+// Default converter that is used for all KeyTypes that are
 // naturally suited to be keys in a trie. This includes all keys that support
 // size() and operator[].
 template <typename KeyType> struct DummyConverter {
@@ -35,8 +35,8 @@ struct IntBitwiseConverter {
     return key & (1 << ind);
   }
 
-  static std::size_t size(int key) {
-    return sizeof(key) * 8; // assuming that char has 8 bits.
+  static std::size_t size(int) {
+    return sizeof(int) * 8; // assuming that char has 8 bits.
   }
 };
 
@@ -53,14 +53,16 @@ template <typename KeyType, typename ValueType,
           ConverterType<KeyType> Converter = DummyConverter<KeyType>>
 class Trie {
 private:
-  class Iterator;
-  friend class Iterator;
   class TrieNode;
   friend class TrieNode;
 
   using KeyContent = Converter::KeyContent;
+  using StorageType = std::map<KeyContent, std::shared_ptr<TrieNode>>;
 
 public:
+  class Iterator;
+  friend class Iterator;
+
   Trie() : root(std::make_shared<TrieNode>(nullptr, KeyContent{})) {}
 
   Trie(const Trie &trie) : root(std::make_shared<TrieNode>(*trie.root)) {}
@@ -121,52 +123,6 @@ public:
   Iterator subtrie_iterator(KeyType prefix, std::size_t len) {
     auto subroot = find_node(prefix, len);
     return Iterator(subroot);
-  }
-
-private:
-  std::shared_ptr<TrieNode> root;
-
-  // internal constructor for making a subtrie
-  Trie(std::shared_ptr<TrieNode> root) : root(root) {}
-
-  // Returns a shared_ptr pointing to the node corresponding
-  // to the specified key. If no such key exists in the trie,
-  // nullptr is returned.
-  std::shared_ptr<TrieNode> find_node(KeyType key) const {
-    return find_node(key, Converter::size(key));
-  }
-
-  std::shared_ptr<TrieNode> find_node(KeyType key, std::size_t key_size) const {
-    std::shared_ptr<TrieNode> current_node = root;
-
-    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
-      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
-      if (!current_node->has_child(next_node_index)) {
-        return nullptr;
-      }
-      current_node = current_node->children.at(next_node_index);
-    }
-    return current_node;
-  }
-
-  // Makes a path to the node corresponding to the key.
-  // If the entire path or parts are already available,
-  // they are reused.
-  std::shared_ptr<TrieNode> mk_path_to_node(KeyType key) {
-    std::shared_ptr<TrieNode> current_node = root;
-    std::size_t key_size = Converter::size(key);
-
-    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
-      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
-
-      if (!current_node->has_child(next_node_index)) {
-        current_node->children[next_node_index] = std::shared_ptr<TrieNode>(
-            new TrieNode(current_node.get(), next_node_index));
-      }
-      current_node = current_node->children.at(next_node_index);
-    }
-    current_node->key = key;
-    return current_node;
   }
 
   class Iterator {
@@ -243,6 +199,52 @@ private:
     const std::shared_ptr<TrieNode> root;
   };
 
+private:
+  std::shared_ptr<TrieNode> root;
+
+  // internal constructor for making a subtrie
+  Trie(std::shared_ptr<TrieNode> root) : root(root) {}
+
+  // Returns a shared_ptr pointing to the node corresponding
+  // to the specified key. If no such key exists in the trie,
+  // nullptr is returned.
+  std::shared_ptr<TrieNode> find_node(KeyType key) const {
+    return find_node(key, Converter::size(key));
+  }
+
+  std::shared_ptr<TrieNode> find_node(KeyType key, std::size_t key_size) const {
+    std::shared_ptr<TrieNode> current_node = root;
+
+    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
+      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
+      if (!current_node->has_child(next_node_index)) {
+        return nullptr;
+      }
+      current_node = current_node->children.at(next_node_index);
+    }
+    return current_node;
+  }
+
+  // Makes a path to the node corresponding to the key.
+  // If the entire path or parts are already available,
+  // they are reused.
+  std::shared_ptr<TrieNode> mk_path_to_node(KeyType key) {
+    std::shared_ptr<TrieNode> current_node = root;
+    std::size_t key_size = Converter::size(key);
+
+    for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
+      KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
+
+      if (!current_node->has_child(next_node_index)) {
+        current_node->children[next_node_index] = std::shared_ptr<TrieNode>(
+            new TrieNode(current_node.get(), next_node_index));
+      }
+      current_node = current_node->children.at(next_node_index);
+    }
+    current_node->key = key;
+    return current_node;
+  }
+
   class TrieNode {
     friend class Trie;
     friend class Iterator;
@@ -251,15 +253,19 @@ private:
     TrieNode(TrieNode *parent, KeyContent prefixed_by)
         : elem(), key(), children(), parent(parent), prefixed_by(prefixed_by) {}
 
-    TrieNode(const TrieNode &other)
+    TrieNode(const TrieNode &other) : TrieNode(other, (TrieNode *)nullptr) {}
+
+    TrieNode(const TrieNode &other, TrieNode *parent)
         : elem(other.elem), key(other.key), children([&] {
-            std::map<KeyContent, std::shared_ptr<TrieNode>> new_children;
+            StorageType new_children;
             for (auto x : other.children) {
-              new_children[x.first] = std::make_shared<TrieNode>(*x.second);
+              // copy all children and set parent to this.
+              new_children[x.first] =
+                  std::make_shared<TrieNode>(*x.second, this);
             }
             return new_children;
           }()),
-          parent(other.parent), prefixed_by(other.prefixed_by) {}
+          parent(parent), prefixed_by(other.prefixed_by) {}
 
     ~TrieNode() {}
 
@@ -272,7 +278,7 @@ private:
   private:
     std::optional<ValueType> elem;
     std::optional<KeyType> key;
-    std::map<KeyContent, std::shared_ptr<TrieNode>> children;
+    StorageType children;
     TrieNode *parent;
     KeyContent prefixed_by;
   };

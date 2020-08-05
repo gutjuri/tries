@@ -18,9 +18,9 @@ benchmark: test_main.o
 	$(CC) $(CFLAGS) -O3 -o benchmark-trie-exe test_main.o benchmark-trie.cpp 
 	$(CC) $(CFLAGS) -O3 -o benchmark-map-exe test_main.o benchmark-map.cpp
 	$(CC) $(CFLAGS) -O3 -o benchmark-trie-bi-exe test_main.o benchmark-trie-bi.cpp
-	./benchmark-trie-exe > benchmark-results-trie.txt
-	./benchmark-trie-bi-exe > benchmark-results-trie-bi.txt
-	./benchmark-map-exe > benchmark-results-map.txt
+	./benchmark-trie-exe > benchmark/benchmark-results-trie.txt
+	./benchmark-trie-bi-exe > benchmark/benchmark-results-trie-bi.txt
+	./benchmark-map-exe > benchmark/benchmark-results-map.txt
 
 clean:
 	rm *.gcov *.gcda *.gcno *.o *-exe
