@@ -4,64 +4,63 @@ benchmark-map-exe is a Catch v2.13.0 host application.
 Run with -? for options
 
 -------------------------------------------------------------------------------
-Make map from vector
+Make trie from vector
 -------------------------------------------------------------------------------
-benchmark-map.cpp:32
+benchmark-trie.cpp:40
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Convert vector to map                          100             1     7.18909 s 
-                                        71.0679 ms     70.806 ms    71.5113 ms 
-                                        1.69422 ms    1.14437 ms    2.51575 ms 
+Convert vector to trie                         100             1     6.85302 s 
+                                        68.3785 ms    67.9813 ms     69.012 ms 
+                                        2.52113 ms    1.83038 ms    3.94796 ms 
                                                                                
 
 -------------------------------------------------------------------------------
-Query large map
+Query large trie
 -------------------------------------------------------------------------------
-benchmark-map.cpp:37
+benchmark-trie.cpp:45
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Query for existent short word                  100           222     1.9314 ms 
-                                        85.7132 ns    85.6294 ns    86.1284 ns 
-                                       0.827047 ns 0.00829257 ns    1.97385 ns 
+Query for existent short word                  100           217      1.953 ms 
+                                        90.9857 ns    90.1314 ns    92.9649 ns 
+                                        6.49571 ns    3.75394 ns    10.3499 ns 
                                                                                
-Query for existent long word                   100           101     1.9493 ms 
-                                         196.55 ns    195.386 ns    200.084 ns 
-                                        9.38231 ns    3.56345 ns    20.0229 ns 
+Query for existent long word                   100           106     1.9504 ms 
+                                        182.559 ns    180.652 ns    187.461 ns 
+                                        13.7235 ns    2.61068 ns    25.9528 ns 
                                                                                
-Query for non-existent word                    100           110      1.947 ms 
-                                        176.906 ns    175.317 ns    180.812 ns 
-                                        11.7162 ns    4.07974 ns    20.6266 ns 
+Query for non-existent word                    100           108     1.9548 ms 
+                                        173.532 ns    172.666 ns     176.83 ns 
+                                        7.71078 ns    1.49901 ns    17.9713 ns 
                                                                                
 Query for non-existent word with                                               
-existing prefix                                100           102     1.9482 ms 
-                                        194.183 ns    189.925 ns    205.126 ns 
-                                        31.0803 ns    7.05809 ns    59.3892 ns 
+existing prefix                                100           107     1.9474 ms 
+                                        182.485 ns    179.928 ns    187.418 ns 
+                                        17.0322 ns    8.33745 ns    26.2395 ns 
                                                                                
 
 -------------------------------------------------------------------------------
 Iterate over trie
 -------------------------------------------------------------------------------
-benchmark-map.cpp:51
+benchmark-trie.cpp:59
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Sum of word lengths                            100             1    426.144 ms 
-                                        4.04423 ms    4.02701 ms    4.06307 ms 
-                                        91.6903 us    80.7708 us    106.775 us 
+Sum of word lengths                            100             1    455.134 ms 
+                                        4.41292 ms    4.34034 ms    4.51193 ms 
+                                        427.885 us    336.886 us    556.098 us 
                                                                                
 
 ===============================================================================
-test cases: 3 | 3 passed
-assertions: - none -
+All tests passed (163 assertions in 3 test cases)
 

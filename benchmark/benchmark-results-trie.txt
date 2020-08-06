@@ -6,62 +6,61 @@ Run with -? for options
 -------------------------------------------------------------------------------
 Make trie from vector
 -------------------------------------------------------------------------------
-benchmark-trie.cpp:33
+benchmark-trie.cpp:40
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Convert vector to trie                         100             1     11.6923 s 
-                                        105.141 ms    104.552 ms    105.938 ms 
-                                        3.46553 ms     2.7338 ms    4.30288 ms 
+Convert vector to trie                         100             1     11.7384 s 
+                                        102.103 ms    101.569 ms    102.793 ms 
+                                         3.0789 ms    2.47954 ms    3.97874 ms 
                                                                                
 
 -------------------------------------------------------------------------------
 Query large trie
 -------------------------------------------------------------------------------
-benchmark-trie.cpp:38
+benchmark-trie.cpp:45
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Query for existent short word                  100           380      1.976 ms 
-                                        60.2427 ns    56.7773 ns    66.2262 ns 
-                                        22.7459 ns    14.0568 ns    31.3664 ns 
+Query for existent short word                  100           342     1.9152 ms 
+                                        52.1461 ns    52.0487 ns    52.3939 ns 
+                                       0.685792 ns  0.0129707 ns    1.26598 ns 
                                                                                
-Query for existent long word                   100            39     2.0046 ms 
-                                        511.419 ns    505.324 ns     522.76 ns 
-                                        41.4154 ns    25.9368 ns    62.7239 ns 
+Query for existent long word                   100            38     1.9646 ms 
+                                        507.489 ns    504.402 ns    515.305 ns 
+                                        21.6613 ns  0.0895603 ns    39.1149 ns 
                                                                                
-Query for non-existent word                    100           123     1.9803 ms 
-                                        166.021 ns     159.95 ns    174.989 ns 
-                                        36.9953 ns    28.0598 ns    51.4653 ns 
+Query for non-existent word                    100           127     1.9558 ms 
+                                        158.454 ns    158.161 ns    159.894 ns 
+                                        2.87373 ns  0.0485972 ns    6.85634 ns 
                                                                                
 Query for non-existent word with                                               
-existing prefix                                100            39     2.0241 ms 
-                                        551.391 ns    531.001 ns    585.224 ns 
-                                        131.278 ns    90.0581 ns    195.949 ns 
+existing prefix                                100            40      1.976 ms 
+                                        494.368 ns    489.998 ns    505.385 ns 
+                                        30.9124 ns    4.09144 ns    56.0709 ns 
                                                                                
 
 -------------------------------------------------------------------------------
 Iterate over trie
 -------------------------------------------------------------------------------
-benchmark-trie.cpp:52
+benchmark-trie.cpp:59
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Sum of word lengths                            100             1     1.66308 s 
-                                        16.8982 ms    16.8118 ms    17.0254 ms 
-                                        529.192 us    394.904 us    707.982 us 
+Sum of word lengths                            100             1     1.58279 s 
+                                         15.983 ms    15.9083 ms    16.1158 ms 
+                                        492.564 us    331.832 us    817.638 us 
                                                                                
 
 ===============================================================================
-test cases: 3 | 3 passed
-assertions: - none -
+All tests passed (115 assertions in 3 test cases)
 

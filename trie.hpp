@@ -5,21 +5,22 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <iostream>
 
 #ifdef TRIE_USE_ARRAY
+#ifndef TRIE_SIGMA
+#define TRIE_SIGMA 256
+#endif
 #include <array>
-#define STORAGE_TYPE std::array<std::shared_ptr<TrieNode>, 256>
-#define FIND(x) [(x)]
+#define STORAGE_TYPE std::array<std::shared_ptr<TrieNode>, TRIE_SIGMA>
 
 #elif TRIE_USE_UNORDERED_MAP
 #include <map>
 #define STORAGE_TYPE std::unordered_map<KeyContent, std::shared_ptr<TrieNode>>
-#define FIND(x) .find((x))
 
 #else
 #include <map>
 #define STORAGE_TYPE std::map<KeyContent, std::shared_ptr<TrieNode>>
-#define FIND(x) .find((x))
 #endif
 
 // Default converter that is used for all KeyTypes that are
@@ -177,12 +178,21 @@ public:
         return;
       }
 
+#ifdef TRIE_USE_ARRAY
+      std::shared_ptr<TrieNode> *child_it =
+          &(current_node->parent->children[current_node->prefixed_by]);
+#else
       // maps are ordered
       auto child_it =
           current_node->parent->children.find(current_node->prefixed_by);
+#endif
       ++child_it;
       for (; child_it != current_node->parent->children.end(); ++child_it) {
+#ifdef TRIE_USE_ARRAY
+        TrieNode *next = leftmost_bottommost_node(child_it->get());
+#else
         TrieNode *next = leftmost_bottommost_node(child_it->second.get());
+#endif
         if (next && next->elem.has_value()) {
           current_node = next;
           return;
@@ -199,9 +209,17 @@ public:
     // Returns a pointer to the leftmost-bottommost node in the structure
     // (i.e. the one that is to be traversed first in this structure).
     static TrieNode *leftmost_bottommost_node(TrieNode *subroot) {
+      if (!subroot) {
+        return nullptr;
+      }
+
       TrieNode *leftmost = nullptr;
       for (auto child : subroot->children) {
+#ifdef TRIE_USE_ARRAY
+        leftmost = leftmost_bottommost_node(child.get());
+#else
         leftmost = leftmost_bottommost_node(child.second.get());
+#endif
         if (leftmost && leftmost->elem.has_value()) {
           return leftmost;
         }
@@ -272,21 +290,38 @@ private:
     TrieNode(const TrieNode &other, TrieNode *parent)
         : elem(other.elem), key(other.key), children([&] {
             StorageType new_children;
+
+
+      // copy all children and set parent to this.
+#ifdef TRIE_USE_ARRAY
+            for (std::size_t i = 0; i < other.children.size(); ++i) {
+              if (!other.children[i]) {
+                continue;
+              }
+              new_children[i] =
+                  std::make_shared<TrieNode>(*other.children[i], this);
+            }
+#else
             for (auto x : other.children) {
-              // copy all children and set parent to this.
               new_children[x.first] =
                   std::make_shared<TrieNode>(*x.second, this);
             }
+#endif
             return new_children;
           }()),
-          parent(parent), prefixed_by(other.prefixed_by) {}
+          parent(parent), prefixed_by(other.prefixed_by) {
+    }
 
     ~TrieNode() {}
 
     TrieNode &operator=(const TrieNode &other) = delete;
 
     bool has_child(KeyContent ind) const {
-      return children.end() != children FIND(ind);
+#ifdef TRIE_USE_ARRAY
+      return children[ind] != nullptr;
+#else
+      return children.end() != children.find(ind);
+#endif
     }
 
   private:

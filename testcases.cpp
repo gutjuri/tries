@@ -1,10 +1,10 @@
 #include "catch2/catch.hpp"
 #include "trie.hpp"
 
+#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
-#include <iostream>
 
 TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   SECTION("Default constructors") {
@@ -23,22 +23,24 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
 
     Trie<std::string, std::string> newTrie(trie);
 
+    
+
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
     REQUIRE(trie.at("A") == "A");
-
+  
     newTrie["B"] = "C";
+    
     auto it = newTrie.begin();
     REQUIRE(it.value() == "AB");
     ++it;
     REQUIRE(it.value() == "X");
     ++it;
     REQUIRE(it.value() == "C");
-
   }
 
   SECTION("move constructor") {
-    auto mk_trie = [](Trie<std::string, int> trie){
+    auto mk_trie = [](Trie<std::string, int> trie) {
       trie["X"] = 42;
       return trie;
     };
@@ -47,7 +49,7 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   }
 
   SECTION("operator=") {
-        Trie<std::string, std::string> trie{};
+    Trie<std::string, std::string> trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
     trie.insert("AB", "AB");
@@ -306,7 +308,7 @@ TEST_CASE("Using the non-default key-converter", "[trie converter]") {
   REQUIRE(trie[100] == "C");
   REQUIRE(trie[123873] == "D");
 
-  //iterate over all even keys
+  // iterate over all even keys
   auto it = trie.subtrie_iterator(0, 1);
   REQUIRE((*it).first == 0);
   ++it;
