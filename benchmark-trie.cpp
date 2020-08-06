@@ -15,6 +15,17 @@
 #define TYPE_TESTED Trie<std::string, std::size_t>
 #endif
 
+struct AlphabeticalStringConverter {
+  using KeyContent = char;
+  static KeyContent get_at_index(const std::string &key, const std::size_t ind) {
+    return key[ind] <= 90 ? key[ind] - 65 : key[ind] - (97 - 26);
+  }
+
+  static std::size_t size(const std::string &key) {
+    return key.size();
+  }
+};
+
 using ContainerType = TYPE_TESTED;
 
 std::vector<std::pair<std::string, std::size_t>> read_words() {
@@ -77,7 +88,7 @@ TEST_CASE("Iterate over trie") {
     for (auto entry : trie) {
       sum += entry.second;
     }
-    // CHECK(sum == 1570540);
+    CHECK(sum == 2257221);
     return sum;
   };
 }

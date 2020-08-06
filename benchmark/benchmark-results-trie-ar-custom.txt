@@ -1,0 +1,76 @@
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+benchmark-trie-ar-custom-exe is a Catch v2.13.0 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+Make trie from vector
+-------------------------------------------------------------------------------
+benchmark-trie.cpp:51
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Convert vector to trie                         100             1     37.8642 s 
+                                        493.178 ms    484.698 ms    500.502 ms 
+                                        39.8741 ms    30.8565 ms    51.7588 ms 
+                                                                               
+Insert long key into large                                                     
+structure                                      100           182     1.9292 ms 
+                                        96.0329 ns     95.348 ns    98.2381 ns 
+                                        5.53401 ns     1.1398 ns    12.1333 ns 
+                                                                               
+Insert short key into large                                                    
+structure                                      100           934      1.868 ms 
+                                        19.9311 ns    19.7467 ns    20.3951 ns 
+                                        1.30795 ns   0.115275 ns    2.38618 ns 
+                                                                               
+
+-------------------------------------------------------------------------------
+Query large trie
+-------------------------------------------------------------------------------
+benchmark-trie.cpp:68
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Query for existent short word                  100          2061     1.8549 ms 
+                                        9.39814 ns    9.34986 ns    9.56739 ns 
+                                        0.41138 ns   0.134019 ns   0.938264 ns 
+                                                                               
+Query for existent long word                   100           175     1.9425 ms 
+                                        108.192 ns    107.929 ns    108.969 ns 
+                                        2.03863 ns   0.330715 ns    4.30649 ns 
+                                                                               
+Query for non-existent word                    100           340      1.938 ms 
+                                        56.4371 ns    56.3355 ns    56.8385 ns 
+                                       0.970775 ns  0.0626327 ns    2.31136 ns 
+                                                                               
+Query for non-existent word with                                               
+existing prefix                                100           151     1.9328 ms 
+                                        109.929 ns     109.71 ns    110.754 ns 
+                                        1.96067 ns   0.381708 ns    4.58806 ns 
+                                                                               
+
+-------------------------------------------------------------------------------
+Iterate over trie
+-------------------------------------------------------------------------------
+benchmark-trie.cpp:82
+...............................................................................
+
+benchmark name                       samples       iterations    estimated
+                                     mean          low mean      high mean
+                                     std dev       low std dev   high std dev
+-------------------------------------------------------------------------------
+Sum of word lengths                            100             1     13.7093 s 
+                                        138.541 ms    137.931 ms    139.421 ms 
+                                        3.70674 ms     2.8622 ms    5.14925 ms 
+                                                                               
+
+===============================================================================
+All tests passed (101 assertions in 3 test cases)
+

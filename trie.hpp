@@ -93,7 +93,7 @@ public:
     return *this;
   }
 
-  // Inserts a key-value pair in into the trie.
+  // Inserts a key-value pair into the trie.
   // If the given key is already associated with a value,
   // then this old value is overridden with the new value.
   // This method returns an optional that contains the
