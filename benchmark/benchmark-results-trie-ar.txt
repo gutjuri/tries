@@ -13,54 +13,65 @@ benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Convert vector to trie                         100             1     1.12985 m 
-                                        360.101 ms    358.953 ms    361.957 ms 
-                                        7.30445 ms    5.20633 ms    11.6649 ms 
+Convert vector to trie                         100             1     2.48532 m 
+                                        735.974 ms    730.956 ms    742.014 ms 
+                                         27.977 ms    24.0224 ms     35.232 ms 
+                                                                               
+Insert long key into large                                                     
+structure                                      100           222     2.1312 ms 
+                                        93.0001 ns    91.0285 ns    96.1363 ns 
+                                        12.4097 ns    9.06841 ns    17.7159 ns 
+                                                                               
+Insert short key into large                                                    
+structure                                      100          1014     2.1294 ms 
+                                         21.257 ns    20.6413 ns    22.1353 ns 
+                                        3.71015 ns    2.83957 ns    4.83313 ns 
                                                                                
 
 -------------------------------------------------------------------------------
 Query large trie
 -------------------------------------------------------------------------------
-benchmark-trie.cpp:45
+benchmark-trie.cpp:57
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Query for existent short word                  100           504     1.9152 ms 
-                                         35.603 ns    35.2063 ns    36.6121 ns 
-                                        2.83346 ns   0.266281 ns    5.30832 ns 
+Query for existent short word                  100          2353     2.1177 ms 
+                                        8.82383 ns    8.70926 ns    9.01971 ns 
+                                       0.746209 ns   0.490509 ns    1.04009 ns 
                                                                                
-Query for existent long word                   100            44       1.98 ms 
-                                        409.488 ns    405.154 ns    420.325 ns 
-                                        32.1491 ns    9.47631 ns     57.859 ns 
+Query for existent long word                   100           231     2.1252 ms 
+                                        98.2128 ns      96.53 ns    100.665 ns 
+                                        10.2382 ns    7.55641 ns    13.0133 ns 
                                                                                
-Query for non-existent word                    100           192       1.92 ms 
-                                        101.925 ns    100.867 ns    104.203 ns 
-                                        7.56001 ns    4.50787 ns    11.8511 ns 
+Query for non-existent word                    100           452     2.1244 ms 
+                                        47.8525 ns    47.0851 ns    48.9771 ns 
+                                        4.68638 ns    3.66698 ns    6.38108 ns 
                                                                                
 Query for non-existent word with                                               
-existing prefix                                100            47     1.9364 ms 
-                                        409.372 ns    404.943 ns     429.39 ns 
-                                        40.0284 ns  0.0699622 ns    95.0815 ns 
+existing prefix                                100           221     2.1437 ms 
+                                        91.1823 ns    90.0336 ns    93.2635 ns 
+                                        7.65684 ns    4.84743 ns    11.5228 ns 
                                                                                
 
 -------------------------------------------------------------------------------
 Iterate over trie
 -------------------------------------------------------------------------------
-benchmark-trie.cpp:59
+benchmark-trie.cpp:71
 ...............................................................................
 
 benchmark name                       samples       iterations    estimated
                                      mean          low mean      high mean
                                      std dev       low std dev   high std dev
 -------------------------------------------------------------------------------
-Sum of word lengths                            100             1      27.016 s 
-                                        261.129 ms    259.684 ms    263.033 ms 
-                                        8.38466 ms     6.7045 ms     11.053 ms 
+Sum of word lengths                            100             1     1.00374 m 
+                                         601.61 ms    599.306 ms    604.223 ms 
+                                        12.4274 ms    10.8561 ms    14.9057 ms 
                                                                                
 
 ===============================================================================
-All tests passed (101 assertions in 3 test cases)
+test cases: 3 | 3 passed
+assertions: - none -
 

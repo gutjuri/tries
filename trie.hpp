@@ -2,10 +2,10 @@
 #define TRIE_HPP
 
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <utility>
-#include <iostream>
 
 #ifdef TRIE_USE_ARRAY
 #ifndef TRIE_SIGMA
@@ -33,10 +33,10 @@ template <typename KeyType> struct DummyConverter {
   using KeyContent =
       typename std::remove_reference<decltype(KeyType{}[0])>::type;
 
-  static KeyContent get_at_index(KeyType key, std::size_t ind) {
+  static KeyContent get_at_index(const KeyType &key, const std::size_t ind) {
     return key[ind];
   }
-  static std::size_t size(KeyType key) { return key.size(); }
+  static std::size_t size(const KeyType &key) { return key.size(); }
 };
 
 // An example converter that enables ints as keys by interpreting an int as a
@@ -46,17 +46,17 @@ template <typename KeyType> struct DummyConverter {
 // all ints with prefix '00' are all ints divisible by 4.
 struct IntBitwiseConverter {
   using KeyContent = bool;
-  static KeyContent get_at_index(int key, std::size_t ind) {
+  static KeyContent get_at_index(const int &key, const std::size_t ind) {
     return key & (1 << ind);
   }
 
-  static std::size_t size(int) {
+  static std::size_t size(const int &) {
     return sizeof(int) * 8; // assuming that char has 8 bits.
   }
 };
 
 template <typename C, typename KeyType>
-concept ConverterType = requires(KeyType key, std::size_t ind) {
+concept ConverterType = requires(const KeyType &key, const std::size_t ind) {
   { C::size(key) }
   ->std::same_as<std::size_t>;
 
@@ -99,14 +99,20 @@ public:
   // This method returns an optional that contains the
   // value previously associated with the given key, or an empty one
   // if there is no such value.
-  std::optional<ValueType> insert(KeyType key, ValueType to_insert) {
+  std::optional<ValueType> insert(const KeyType key,
+                                  const ValueType to_insert) {
     std::shared_ptr<TrieNode> insert_at_node = mk_path_to_node(key);
     std::optional to_insert_o(to_insert);
     insert_at_node->elem.swap(to_insert_o);
     return to_insert_o;
   }
 
-  std::optional<ValueType> at(KeyType key) const {
+  std::optional<ValueType> at(KeyType &key) const {
+    std::shared_ptr<TrieNode> current_node = find_node(key);
+    return current_node ? current_node->elem : std::optional<ValueType>();
+  }
+
+  std::optional<ValueType> at(KeyType &&key) const {
     std::shared_ptr<TrieNode> current_node = find_node(key);
     return current_node ? current_node->elem : std::optional<ValueType>();
   }
@@ -121,7 +127,7 @@ public:
     return insert_at_node->elem;
   }
 
-  bool has_key(KeyType key) {
+  bool has_key(const KeyType &key) const {
     std::shared_ptr<TrieNode> target_node = find_node(key);
     return target_node && target_node->elem.has_value();
   }
@@ -130,12 +136,21 @@ public:
 
   Iterator end() { return Iterator(); }
 
-  Iterator subtrie_iterator(KeyType prefix) {
+  Iterator subtrie_iterator(const KeyType &prefix) const {
     auto subroot = find_node(prefix);
     return Iterator(subroot);
   }
 
-  Iterator subtrie_iterator(KeyType prefix, std::size_t len) {
+  Iterator subtrie_iterator(const KeyType &&prefix) const {
+    auto subroot = find_node(prefix);
+    return Iterator(subroot);
+  }
+
+  Iterator subtrie_iterator(const KeyType &prefix, std::size_t len) const {
+    auto subroot = find_node(prefix, len);
+    return Iterator(subroot);
+  }
+  Iterator subtrie_iterator(const KeyType &&prefix, std::size_t len) const {
     auto subroot = find_node(prefix, len);
     return Iterator(subroot);
   }
@@ -240,11 +255,12 @@ private:
   // Returns a shared_ptr pointing to the node corresponding
   // to the specified key. If no such key exists in the trie,
   // nullptr is returned.
-  std::shared_ptr<TrieNode> find_node(KeyType key) const {
+  std::shared_ptr<TrieNode> find_node(const KeyType &key) const {
     return find_node(key, Converter::size(key));
   }
 
-  std::shared_ptr<TrieNode> find_node(KeyType key, std::size_t key_size) const {
+  std::shared_ptr<TrieNode> find_node(const KeyType &key,
+                                      const std::size_t key_size) const {
     std::shared_ptr<TrieNode> current_node = root;
 
     for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
@@ -260,7 +276,7 @@ private:
   // Makes a path to the node corresponding to the key.
   // If the entire path or parts are already available,
   // they are reused.
-  std::shared_ptr<TrieNode> mk_path_to_node(KeyType key) {
+  std::shared_ptr<TrieNode> mk_path_to_node(const KeyType &key) {
     std::shared_ptr<TrieNode> current_node = root;
     std::size_t key_size = Converter::size(key);
 
@@ -290,7 +306,6 @@ private:
     TrieNode(const TrieNode &other, TrieNode *parent)
         : elem(other.elem), key(other.key), children([&] {
             StorageType new_children;
-
 
       // copy all children and set parent to this.
 #ifdef TRIE_USE_ARRAY
