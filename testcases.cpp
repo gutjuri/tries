@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+
+
 TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   SECTION("Default constructors") {
     { Trie<std::string, std::string> t{}; }
