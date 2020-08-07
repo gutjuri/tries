@@ -2,7 +2,6 @@
 #define TRIE_HPP
 
 #include <cstdlib>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -55,6 +54,9 @@ struct IntBitwiseConverter {
   }
 };
 
+// A converter lets the trie view some object as a sequence of symbols.
+// It must provide methods to aquire the symbol at a certain position and the key's size.
+// Further it must provide the data-type that symbols have (KeyContent).
 template <typename C, typename KeyType>
 concept ConverterType = requires(const KeyType &key, const std::size_t ind) {
   { C::size(key) }

@@ -23,8 +23,6 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
 
     Trie<std::string, std::string> newTrie(trie);
 
-    
-
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
     REQUIRE(trie.at("A") == "A");
