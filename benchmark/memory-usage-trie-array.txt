@@ -1,18 +1,18 @@
 	Command being timed: "./benchmark-trie-ar-exe"
-	User time (seconds): 134.02
-	System time (seconds): 1.10
+	User time (seconds): 122.31
+	System time (seconds): 1.08
 	Percent of CPU this job got: 99%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:15.29
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:03.49
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 3283648
+	Maximum resident set size (kbytes): 3273744
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 1239740
+	Minor (reclaiming a frame) page faults: 1234841
 	Voluntary context switches: 1
-	Involuntary context switches: 3441
+	Involuntary context switches: 3298
 	Swaps: 0
 	File system inputs: 0
 	File system outputs: 0

@@ -1,18 +1,18 @@
 	Command being timed: "./benchmark-trie-um-exe"
-	User time (seconds): 92.47
-	System time (seconds): 0.43
+	User time (seconds): 91.53
+	System time (seconds): 0.60
 	Percent of CPU this job got: 99%
-	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:32.93
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:32.28
 	Average shared text size (kbytes): 0
 	Average unshared data size (kbytes): 0
 	Average stack size (kbytes): 0
 	Average total size (kbytes): 0
-	Maximum resident set size (kbytes): 668424
+	Maximum resident set size (kbytes): 663472
 	Average resident set size (kbytes): 0
 	Major (requiring I/O) page faults: 0
-	Minor (reclaiming a frame) page faults: 485016
+	Minor (reclaiming a frame) page faults: 480116
 	Voluntary context switches: 1
-	Involuntary context switches: 702
+	Involuntary context switches: 6096
 	Swaps: 0
 	File system inputs: 0
 	File system outputs: 0
