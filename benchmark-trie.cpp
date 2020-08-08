@@ -11,13 +11,9 @@
 #include <string>
 #include <vector>
 
-#ifndef TYPE_TESTED
-#define TYPE_TESTED Trie<std::string, std::size_t>
-#endif
-
 // A custom converter for using strings only containing the characters A-Za-z as
 // keys. This precondition is not checked.
-// In order to use this converter, instatiate a trie with 
+// In order to use this converter, instatiate a trie with
 // Trie<std::string, ValueType, AlphabeticalStringConverter> and compile
 // the programme with the preprocessor-variable TRIE_USE_ARRAY set and the
 // preprocessor-variable TRIE_SIGMA set to 52
@@ -31,7 +27,25 @@ struct AlphabeticalStringConverter {
   static std::size_t size(const std::string &key) { return key.size(); }
 };
 
-using ContainerType = TYPE_TESTED;
+#ifdef BM_ARRAY
+using ContainerType =
+    Trie<std::string, std::size_t, DummyConverter<std::string>,
+         ArrayStorage<std::string, char, std::size_t, 256>>;
+#elif BM_ARRAY_CUSTOM
+using ContainerType =
+    Trie<std::string, std::size_t, AlphabeticalStringConverter,
+         ArrayStorage<std::string, char, std::size_t, 52>>;
+#elif BM_UNORDERED_MAP
+using ContainerType =
+    Trie<std::string, std::size_t, DummyConverter<std::string>,
+         UnorderedMapStorage<std::string, char, std::size_t>>;
+#elif BM_STD_MAP
+using ContainerType = std::map<std::string, std::size_t>;
+#elif BM_GNU_TRIE
+using ContainerType = __gnu_pbds::trie<std::string, std::size_t>;
+#else
+using ContainerType = Trie<std::string, std::size_t>;
+#endif
 
 std::vector<std::pair<std::string, std::size_t>> read_words() {
   std::vector<std::pair<std::string, std::size_t>> v{};
@@ -55,7 +69,9 @@ prepare_word_container(std::vector<std::pair<std::string, std::size_t>> &v) {
 
 TEST_CASE("Make trie from vector") {
   auto v = read_words();
-  BENCHMARK("Convert vector to data-structure") { return prepare_word_container(v); };
+  BENCHMARK("Convert vector to data-structure") {
+    return prepare_word_container(v);
+  };
 
   auto structure = prepare_word_container(v);
   std::string long_word = "testwordtestword";

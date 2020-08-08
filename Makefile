@@ -6,7 +6,11 @@ test_main.o: test.cpp
 
 unittests: test_main.o testcases.cpp
 	$(CC) $(CFLAGS) -o test-exe test_main.o testcases.cpp
+	$(CC) $(CFLAGS) -o test-ar-exe -D TEST_USE_ARRAY test_main.o testcases.cpp
+	$(CC) $(CFLAGS) -o test-um-exe -D TEST_USE_UNORDERED_MAP test_main.o testcases.cpp
 	./test-exe
+	./test-ar-exe
+	./test-um-exe
 
 unittests_cov: test_main.o
 	$(CC) $(CFLAGS) --coverage -o test-exe test_main.o testcases.cpp
@@ -16,11 +20,11 @@ unittests_cov: test_main.o
 
 bm_bins: test_main.o benchmark-trie.cpp trie.hpp
 	$(CC) $(CFLAGS) -O3 -o benchmark-trie-exe test_main.o benchmark-trie.cpp
-	$(CC) $(CFLAGS) -O3 -o benchmark-trie-um-exe -D TRIE_USE_UNORDERED_MAP test_main.o benchmark-trie.cpp
-	$(CC) $(CFLAGS) -O3 -o benchmark-trie-ar-exe -D TRIE_USE_ARRAY test_main.o benchmark-trie.cpp
-	$(CC) $(CFLAGS) -O3 -o benchmark-trie-ar-custom-exe -D TRIE_USE_ARRAY -D TRIE_SIGMA=52 -D TYPE_TESTED="Trie<std::string, std::size_t, AlphabeticalStringConverter>" test_main.o benchmark-trie.cpp
-	$(CC) $(CFLAGS) -O3 -o benchmark-map-exe -D TYPE_TESTED="std::map<std::string,std::size_t>" test_main.o benchmark-trie.cpp
-	$(CC) $(CFLAGS) -O3 -o benchmark-trie-bi-exe -D TYPE_TESTED="__gnu_pbds::trie<std::string,std::size_t>" test_main.o benchmark-trie.cpp
+	$(CC) $(CFLAGS) -O3 -o benchmark-trie-um-exe -D BM_UNORDERED_MAP test_main.o benchmark-trie.cpp
+	$(CC) $(CFLAGS) -O3 -o benchmark-trie-ar-exe -D BM_ARRAY test_main.o benchmark-trie.cpp
+	$(CC) $(CFLAGS) -O3 -o benchmark-trie-ar-custom-exe -D BM_ARRAY_CUSTOM test_main.o benchmark-trie.cpp
+	#$(CC) $(CFLAGS) -O3 -o benchmark-map-exe -D BM_STD_MAP test_main.o benchmark-trie.cpp
+	#$(CC) $(CFLAGS) -O3 -o benchmark-trie-bi-exe -D BM_GNU_TRIE test_main.o benchmark-trie.cpp
 
 benchmark: bm_bins
 	./benchmark-trie-exe >/dev/null # warm up caches

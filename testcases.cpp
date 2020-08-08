@@ -6,11 +6,17 @@
 #include <string>
 #include <vector>
 
-
+#ifdef TEST_USE_ARRAY
+using StringStringTrie =
+    Trie<std::string, std::string, DummyConverter<std::string>,
+         ArrayStorage<std::string, char, std::string, 256>>;
+#else
+using StringStringTrie = Trie<std::string, std::string>;
+#endif
 
 TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   SECTION("Default constructors") {
-    { Trie<std::string, std::string> t{}; }
+    { StringStringTrie t{}; }
 
     { Trie<std::string, int> t{}; }
 
@@ -19,20 +25,19 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
 
   SECTION("Copy constructor") {
 
-    Trie<std::string, std::string> trie{};
+    StringStringTrie trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
     trie.insert("AB", "AB");
 
-    Trie<std::string, std::string> newTrie(trie);
+    StringStringTrie newTrie(trie);
 
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
     REQUIRE(trie.at("A") == "A");
 
-  
     newTrie["B"] = "C";
-    
+
     auto it = newTrie.begin();
     REQUIRE(it.value() == "AB");
     ++it;
@@ -51,12 +56,12 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   }
 
   SECTION("operator=") {
-    Trie<std::string, std::string> trie{};
+    StringStringTrie trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
     trie.insert("AB", "AB");
 
-    Trie<std::string, std::string> newTrie;
+    StringStringTrie newTrie;
     newTrie = trie;
 
     newTrie.insert("A", "X");
@@ -65,9 +70,8 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   }
 }
 
-
 TEST_CASE("Add elements to trie and check if they're in the trie", "[trie]") {
-  Trie<std::string, std::string> trie{};
+  StringStringTrie trie{};
   trie.insert("key1", "hello");
   trie.insert("key2", "world");
   trie.insert("otherPrefixKey", "!!");
@@ -84,7 +88,7 @@ TEST_CASE("Add elements to trie and check if they're in the trie", "[trie]") {
 }
 
 TEST_CASE("Iterating over a trie", "[trie iterator]") {
-  Trie<std::string, std::string> trie{};
+  StringStringTrie trie{};
   trie.insert("A", "A");
   trie.insert("B", "B");
   trie.insert("C", "C");
@@ -148,7 +152,7 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
   }
 
   SECTION("Iterate on prefix-subtree") {
-    Trie<std::string, std::string> trie{};
+    StringStringTrie trie{};
     std::vector<std::pair<std::string, std::string>> expected{
         std::make_pair("ABC", "D"), std::make_pair("AB", "B"),
         std::make_pair("AC", "C"), std::make_pair("A", "A")};
@@ -178,7 +182,7 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
   }
 
   SECTION("Doing assignments via an iterator") {
-    Trie<std::string, std::string> trie2{};
+    StringStringTrie trie2{};
     trie2.insert("A", "A");
     trie2.insert("B", "B");
     trie2.insert("C", "C");
@@ -204,7 +208,7 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
 }
 
 TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
-  Trie<std::string, std::string> trie{};
+  StringStringTrie trie{};
   trie.insert("A", "A");
   trie.insert("B", "B");
   trie.insert("AB", "AB");
@@ -224,7 +228,7 @@ TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
 
 TEST_CASE("Replace elements in the trie", "[trie replace]") {
   SECTION("Without checking the return value") {
-    Trie<std::string, std::string> trie{};
+    StringStringTrie trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
     trie.insert("AB", "AB");
@@ -246,7 +250,7 @@ TEST_CASE("Replace elements in the trie", "[trie replace]") {
     REQUIRE(trie.at("AB") == "CD");
   }
   SECTION("With checking the return value") {
-    Trie<std::string, std::string> trie{};
+    StringStringTrie trie{};
     REQUIRE(trie.insert("A", "A") == std::optional<std::string>());
     REQUIRE(trie.insert("B", "B") == std::optional<std::string>());
     REQUIRE(trie.insert("AB", "AB") == std::optional<std::string>());
@@ -274,7 +278,7 @@ TEST_CASE("Replace elements in the trie", "[trie replace]") {
 }
 
 TEST_CASE("operator[]", "[trie operator[]]") {
-  Trie<std::string, std::string> trie{};
+  StringStringTrie trie{};
   trie["A"] = "A";
   REQUIRE(trie.at("A") == "A");
   REQUIRE(trie["A"] == "A");
