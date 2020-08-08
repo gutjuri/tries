@@ -6,9 +6,7 @@ test_main.o: test.cpp
 
 unittests: test_main.o testcases.cpp
 	$(CC) $(CFLAGS) -o test-exe test_main.o testcases.cpp
-	$(CC) $(CFLAGS) -o test-ar-exe -D TRIE_USE_ARRAY test_main.o testcases.cpp
 	./test-exe
-	./test-ar-exe
 
 unittests_cov: test_main.o
 	$(CC) $(CFLAGS) --coverage -o test-exe test_main.o testcases.cpp

@@ -18,6 +18,7 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
   }
 
   SECTION("Copy constructor") {
+
     Trie<std::string, std::string> trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
@@ -28,6 +29,7 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
     REQUIRE(trie.at("A") == "A");
+
   
     newTrie["B"] = "C";
     
@@ -62,6 +64,7 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
     REQUIRE(trie.at("A") == "A");
   }
 }
+
 
 TEST_CASE("Add elements to trie and check if they're in the trie", "[trie]") {
   Trie<std::string, std::string> trie{};
@@ -316,3 +319,4 @@ TEST_CASE("Using the non-default key-converter", "[trie converter]") {
   ++it;
   REQUIRE(it == trie.end());
 }
+/***/

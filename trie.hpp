@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <iostream>
 
 // Default converter that is used for all KeyTypes that are
 // naturally suited to be keys in a trie. This includes all keys that support
@@ -53,23 +54,23 @@ concept ConverterType = requires(const KeyType &key, const std::size_t ind) {
   ->std::same_as<typename C::KeyContent>;
 };
 
-template <typename KeyType, typename KeyContent_p, typename ValueType>
+template <typename KeyType, typename KeyContent, typename ValueType,
+          typename StorageType>
 struct TrieNode_T {
-  using KeyContent = KeyContent_p;
-  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType>;
+  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType, StorageType>;
 
-  TrieNode_T(TrieNode_T *parent, KeyContent prefixed_by)
+  TrieNode_T(TrieNode *parent, KeyContent prefixed_by)
       : elem(), key(), children(), parent(parent), prefixed_by(prefixed_by) {}
 
-  TrieNode_T(const TrieNode &other) : TrieNode_T(other, (TrieNode *)nullptr) {}
+  TrieNode_T(const TrieNode &other) : TrieNode(other, (TrieNode *)nullptr) {}
 
-  TrieNode_T(const TrieNode_T &other, TrieNode *parent)
-      : elem(other.elem), key(other.key), children(other.children, parent),
+  TrieNode_T(const TrieNode &other, TrieNode *parent)
+      : elem(other.elem), key(other.key), children(other.children, this),
         parent(parent), prefixed_by(other.prefixed_by) {}
 
   ~TrieNode_T() {}
 
-  TrieNode_T &operator=(const TrieNode_T &other) = delete;
+  TrieNode &operator=(const TrieNode &other) = delete;
 
   bool has_child(KeyContent ind) const { return children.has_child(ind); }
 
@@ -80,11 +81,14 @@ struct TrieNode_T {
   KeyContent prefixed_by;
 };
 
-template <typename TrieNode> class MapStorage {
+template <typename KeyType, typename KeyContent, typename ValueType>
+class MapStorage {
 public:
-  MapStorage() : children();
+  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType,
+                              MapStorage<KeyType, KeyContent, ValueType>>;
+  MapStorage() : children() {}
   MapStorage(const MapStorage &other, TrieNode *parent)
-      : children([] {
+      : children([&] {
           std::map<KeyContent, std::shared_ptr<TrieNode>> new_children;
           for (auto x : other.children) {
             new_children[x.first] =
@@ -93,15 +97,15 @@ public:
           return new_children;
         }()) {}
 
-  bool has_child(TrieNode::KeyContent key) const {
+  bool has_child(KeyContent ind) const {
     return children.end() != children.find(ind);
   }
-  TrieNode &operator[](TrieNode::KeyContent key) { return children[key]; }
+  std::shared_ptr<TrieNode> &operator[](KeyContent key) { return children[key]; }
 
   class Iterator {
   public:
     Iterator(
-        std::map<TrieNode::KeyContent, std::shared_ptr<TrieNode>>::iterator it)
+        std::map<KeyContent, std::shared_ptr<TrieNode>>::iterator it)
         : it(it) {}
 
     Iterator &operator++() {
@@ -113,27 +117,31 @@ public:
     std::shared_ptr<TrieNode> operator*() { return it->second; }
 
   private:
-    std::map<TrieNode::KeyContent, std::shared_ptr<TrieNode>>::iterator it;
+    std::map<KeyContent, std::shared_ptr<TrieNode>>::iterator it;
   };
 
   Iterator begin() { return Iterator(children.begin()); }
 
   Iterator end() { return Iterator(children.end()); }
 
-  Iterator find(TrieNode::KeyContent ind) {
+  Iterator find(KeyContent ind) {
     return Iterator(children.find(ind));
   }
 
 private:
-  std::map<TrieNode::KeyContent, std::shared_ptr<TrieNode>> children;
+  std::map<KeyContent, std::shared_ptr<TrieNode>> children;
 };
 
-template <typename TrieNode, std::size_t size> class ArrayStorage {
+template <typename KeyType, typename KeyContent,
+          typename ValueType, std::size_t size>
+class ArrayStorage {
 public:
-  ArrayStorage() : children();
+  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType,
+                              ArrayStorage<KeyType, KeyContent, ValueType, size>>;
+  ArrayStorage() : children() {}
 
   ArrayStorage(const ArrayStorage &other, TrieNode *parent)
-      : children([] {
+      : children([&] {
           std::array<std::shared_ptr<TrieNode>, size> new_children;
           for (std::size_t i = 0; i < other.children.size(); ++i) {
             if (!other.children[i]) {
@@ -145,17 +153,17 @@ public:
           return new_children;
         }()) {}
 
-  bool has_child(TrieNode::KeyContent key) const {
+  bool has_child(KeyContent key) const {
     return children[key] != nullptr;
   }
 
-  TrieNode &operator[](TrieNode::KeyContent key) { return children[key]; }
+  std::shared_ptr<TrieNode> &operator[](KeyContent key) { return children[key]; }
 
-  TrieNode *begin() { return children.begin(); }
+  std::shared_ptr<TrieNode> *begin() { return children.begin(); }
 
-  TrieNode *end() { return children.end(); }
+  std::shared_ptr<TrieNode> *end() { return children.end(); }
 
-  TrieNode *find(TrieNode::KeyContent ind) { return &children[ind]; }
+  std::shared_ptr<TrieNode> *find(KeyContent ind) { return &children[ind]; }
 
 private:
   std::array<std::shared_ptr<TrieNode>, size> children;
@@ -163,14 +171,14 @@ private:
 
 template <typename KeyType, typename ValueType,
           ConverterType<KeyType> Converter = DummyConverter<KeyType>,
-          typename TrieNode = TrieNode_T<KeyType, Converter::KeyContent, ValueType>,
-          typename StorageType = MapStorage<TrieNode>>
+          typename StorageType = MapStorage<KeyType, typename Converter::KeyContent, ValueType>>
 class Trie {
 private:
-  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType>;
-  friend class TrieNode;
 
   using KeyContent = Converter::KeyContent;
+  using TrieNode = TrieNode_T<KeyType, KeyContent, ValueType, StorageType>;
+  friend class TrieNode_T<KeyType, KeyContent, ValueType, StorageType>;
+
 
 public:
   class Iterator;
@@ -290,17 +298,19 @@ public:
         current_node = nullptr;
         return;
       }
-
-      auto child_it =
-          current_node->parent->children.find(current_node->prefixed_by);
+      auto neighbours = current_node->parent->children;
+      
+      auto child_it = neighbours.find(current_node->prefixed_by);
+      
       ++child_it;
-      for (; child_it != current_node->parent->children.end(); ++child_it) {
+      for (; child_it != neighbours.end(); ++child_it) {
         TrieNode *next = leftmost_bottommost_node((*child_it).get());
         if (next && next->elem.has_value()) {
           current_node = next;
           return;
         }
       }
+
       if (current_node->parent->elem.has_value()) {
         current_node = current_node->parent;
         return;
@@ -317,7 +327,7 @@ public:
       }
 
       TrieNode *leftmost = nullptr;
-      for (auto it = subroot->children.begin(), it != subroot->children.end();
+      for (auto it = subroot->children.begin(); it != subroot->children.end();
            ++it) {
         leftmost = leftmost_bottommost_node((*it).get());
         if (leftmost && leftmost->elem.has_value()) {
