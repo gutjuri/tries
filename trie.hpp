@@ -3,7 +3,6 @@
 
 #include <array>
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -22,7 +21,9 @@ template <typename KeyType> struct DummyConverter {
     return key[ind];
   }
 
-  static std::size_t size(const KeyType &key) { return std::size(key); }
+  static std::size_t size(const KeyType &key) noexcept {
+    return std::size(key);
+  }
 };
 
 // An example converter that enables ints as keys by interpreting an int as a
@@ -32,11 +33,12 @@ template <typename KeyType> struct DummyConverter {
 // all ints with prefix '00' are all ints divisible by 4.
 struct IntBitwiseConverter {
   using KeyContent = bool;
-  static KeyContent get_at_index(const int &key, const std::size_t ind) {
+  static KeyContent get_at_index(const int &key,
+                                 const std::size_t ind) noexcept {
     return key & (1 << ind);
   }
 
-  static std::size_t size(const int &) {
+  static std::size_t size(const int &) noexcept {
     return sizeof(int) * 8; // assuming that char has 8 bits.
   }
 };
@@ -57,12 +59,14 @@ concept ConverterType = requires(const KeyType &key, const std::size_t ind) {
 template <typename KeyType, typename KeyContent, typename ValueType,
           typename StorageType>
 struct TrieNode {
-  using TrieNode_instance = TrieNode<KeyType, KeyContent, ValueType, StorageType>;
+  using TrieNode_instance =
+      TrieNode<KeyType, KeyContent, ValueType, StorageType>;
 
   TrieNode(TrieNode_instance *parent, KeyContent prefixed_by)
       : elem(), key(), children(), parent(parent), prefixed_by(prefixed_by) {}
 
-  TrieNode(const TrieNode_instance &other) : TrieNode_instance(other, (TrieNode_instance *)nullptr) {}
+  TrieNode(const TrieNode_instance &other)
+      : TrieNode_instance(other, (TrieNode_instance *)nullptr) {}
 
   TrieNode(const TrieNode_instance &other, TrieNode_instance *parent)
       : elem(other.elem), key(other.key), children(other.children, this),
@@ -81,6 +85,7 @@ struct TrieNode {
   KeyContent prefixed_by;
 };
 
+// When we don't care if we have a reference or not.
 template <typename A, typename B>
 concept same_as_disregard_ref = std::same_as<A, B> || std::same_as<A, B &>;
 
@@ -111,8 +116,9 @@ concept StorageType =
   { storage[keycont] }
   ->std::same_as<
       std::shared_ptr<TrieNode<KeyType, KeyContent, ValueType, ST>> &>;
-  
-  // It doesn't really matter if we have a shared_ptr or a reference to a shared_ptr
+
+  // It doesn't really matter if we have a shared_ptr or a reference to a
+  // shared_ptr
   { *storage.begin() }
   ->same_as_disregard_ref<
       std::shared_ptr<TrieNode<KeyType, KeyContent, ValueType, ST>>>;
@@ -130,8 +136,9 @@ concept StorageType =
 template <typename KeyType, typename KeyContent, typename ValueType>
 class MapStorage {
 public:
-  using TrieNode_instance = TrieNode<KeyType, KeyContent, ValueType,
-                              MapStorage<KeyType, KeyContent, ValueType>>;
+  using TrieNode_instance =
+      TrieNode<KeyType, KeyContent, ValueType,
+               MapStorage<KeyType, KeyContent, ValueType>>;
   MapStorage() : children() {}
   MapStorage(const MapStorage &other, TrieNode_instance *parent)
       : children([&] {
@@ -143,23 +150,28 @@ public:
           return new_children;
         }()) {}
 
-  bool has_child(KeyContent ind) const {
+  ~MapStorage() {}
+
+  MapStorage &operator=(const MapStorage &other) = delete;
+
+  bool has_child(KeyContent ind) const noexcept {
     return children.end() != children.find(ind);
   }
-  std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) {
+  std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) noexcept {
     return children[key];
   }
 
   class Iterator {
   public:
-    Iterator(std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
+    Iterator(
+        std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
         : it(it) {}
 
-    Iterator &operator++() {
+    Iterator &operator++() noexcept {
       ++it;
       return *this;
     }
-    bool operator!=(const Iterator &other) { return it != other.it; }
+    bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
     std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
 
@@ -167,11 +179,13 @@ public:
     std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it;
   };
 
-  Iterator begin() { return Iterator(children.begin()); }
+  Iterator begin() noexcept { return Iterator(children.begin()); }
 
-  Iterator end() { return Iterator(children.end()); }
+  Iterator end() noexcept { return Iterator(children.end()); }
 
-  Iterator find(KeyContent ind) { return Iterator(children.find(ind)); }
+  Iterator find(KeyContent ind) noexcept {
+    return Iterator(children.find(ind));
+  }
 
 private:
   std::map<KeyContent, std::shared_ptr<TrieNode_instance>> children;
@@ -185,9 +199,10 @@ class UnorderedMapStorage {
 public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
-                 UnorderedMapStorage<KeyType, KeyContent, ValueType>>;
+               UnorderedMapStorage<KeyType, KeyContent, ValueType>>;
   UnorderedMapStorage() : children() {}
-  UnorderedMapStorage(const UnorderedMapStorage &other, TrieNode_instance *parent)
+  UnorderedMapStorage(const UnorderedMapStorage &other,
+                      TrieNode_instance *parent)
       : children([&] {
           std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>
               new_children;
@@ -197,37 +212,43 @@ public:
           }
           return new_children;
         }()) {}
+  ~UnorderedMapStorage() {}
 
-  bool has_child(KeyContent ind) const {
+  UnorderedMapStorage &operator=(const UnorderedMapStorage &other) = delete;
+
+  bool has_child(KeyContent ind) const noexcept {
     return children.end() != children.find(ind);
   }
-  std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) {
+  std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) noexcept {
     return children[key];
   }
 
   class Iterator {
   public:
-    Iterator(
-        std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
+    Iterator(std::unordered_map<
+             KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
         : it(it) {}
 
-    Iterator &operator++() {
+    Iterator &operator++() noexcept {
       ++it;
       return *this;
     }
-    bool operator!=(const Iterator &other) { return it != other.it; }
+    bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
     std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
 
   private:
-    std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it;
+    std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator
+        it;
   };
 
-  Iterator begin() { return Iterator(children.begin()); }
+  Iterator begin() noexcept { return Iterator(children.begin()); }
 
-  Iterator end() { return Iterator(children.end()); }
+  Iterator end() noexcept { return Iterator(children.end()); }
 
-  Iterator find(KeyContent ind) { return Iterator(children.find(ind)); }
+  Iterator find(KeyContent ind) noexcept {
+    return Iterator(children.find(ind));
+  }
 
 private:
   std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>> children;
@@ -245,7 +266,7 @@ class ArrayStorage {
 public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
-                 ArrayStorage<KeyType, KeyContent, ValueType, size>>;
+               ArrayStorage<KeyType, KeyContent, ValueType, size>>;
   ArrayStorage() : children() {}
 
   ArrayStorage(const ArrayStorage &other, TrieNode_instance *parent)
@@ -261,17 +282,25 @@ public:
           return new_children;
         }()) {}
 
-  bool has_child(KeyContent key) const { return children[key] != nullptr; }
+  ~ArrayStorage() {}
+
+  ArrayStorage &operator=(const ArrayStorage &other) = delete;
+
+  bool has_child(KeyContent key) const { return children.at(key) != nullptr; }
 
   std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) {
-    return children[key];
+    return children.at(key);
   }
 
-  std::shared_ptr<TrieNode_instance> *begin() { return children.begin(); }
+  std::shared_ptr<TrieNode_instance> *begin() noexcept {
+    return children.begin();
+  }
 
-  std::shared_ptr<TrieNode_instance> *end() { return children.end(); }
+  std::shared_ptr<TrieNode_instance> *end() noexcept { return children.end(); }
 
-  std::shared_ptr<TrieNode_instance> *find(KeyContent ind) { return &children[ind]; }
+  std::shared_ptr<TrieNode_instance> *find(KeyContent ind) {
+    return &children.at(ind);
+  }
 
 private:
   std::array<std::shared_ptr<TrieNode_instance>, size> children;
@@ -279,7 +308,9 @@ private:
 
 // KeyType: Type of Key
 // ValueType: Type of values
-// ConverterType: Provides functions to get symbols in the key at specific positions and the key's size. If none is specified, operator[] and std::size() are used.
+// ConverterType: Provides functions to get symbols in the key at specific
+// positions and the key's size. If none is specified, operator[] and
+// std::size() are used.
 template <
     typename KeyType, typename ValueType,
     ConverterType<KeyType> Converter = DummyConverter<KeyType>,
@@ -297,7 +328,8 @@ public:
 
   Trie() : root(std::make_shared<TrieNode_instance>(nullptr, KeyContent{})) {}
 
-  Trie(const Trie &trie) : root(std::make_shared<TrieNode_instance>(*trie.root)) {}
+  Trie(const Trie &trie)
+      : root(std::make_shared<TrieNode_instance>(*trie.root)) {}
 
   Trie(Trie &&other) { swap(*this, other); }
 
@@ -306,6 +338,11 @@ public:
   friend void swap(Trie &t1, Trie &t2) { std::swap(t1.root, t2.root); }
 
   Trie &operator=(Trie other) {
+    swap(*this, other);
+    return *this;
+  }
+
+  Trie &operator=(Trie &&other) {
     swap(*this, other);
     return *this;
   }
@@ -432,7 +469,8 @@ public:
 
     // Returns a pointer to the leftmost-bottommost node in the structure
     // (i.e. the one that is to be traversed first in this structure).
-    static TrieNode_instance *leftmost_bottommost_node(TrieNode_instance *subroot) {
+    static TrieNode_instance *
+    leftmost_bottommost_node(TrieNode_instance *subroot) {
       if (!subroot) {
         return nullptr;
       }
@@ -465,8 +503,8 @@ private:
     return find_node(key, Converter::size(key));
   }
 
-  std::shared_ptr<TrieNode_instance> find_node(const KeyType &key,
-                                      const std::size_t key_size) const {
+  std::shared_ptr<TrieNode_instance>
+  find_node(const KeyType &key, const std::size_t key_size) const {
     std::shared_ptr<TrieNode_instance> current_node = root;
 
     for (std::size_t pos_in_key = 0; pos_in_key != key_size; pos_in_key++) {
@@ -490,8 +528,9 @@ private:
       KeyContent next_node_index = Converter::get_at_index(key, pos_in_key);
 
       if (!current_node->has_child(next_node_index)) {
-        current_node->children[next_node_index] = std::shared_ptr<TrieNode_instance>(
-            new TrieNode_instance(current_node.get(), next_node_index));
+        current_node->children[next_node_index] =
+            std::shared_ptr<TrieNode_instance>(
+                new TrieNode_instance(current_node.get(), next_node_index));
       }
       current_node = current_node->children[next_node_index];
     }
