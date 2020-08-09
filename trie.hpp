@@ -95,13 +95,13 @@ template <typename ST, typename KeyType, typename KeyContent,
           typename ValueType>
 concept StorageType =
     requires(ST storage, KeyType key, KeyContent keycont,
-             TrieNode<KeyType, KeyContent, ValueType, ST> *par) {
+             TrieNode<KeyType, KeyContent, ValueType, ST> *parent) {
 
   {
-    ST { storage, par }
     // Modified copy constructor must support an additional parameter.
     // This is the node's (the storage is part of) parent.
     // This is necessary because copying is non-trivial.
+    ST { storage, parent }
   }
   ->std::same_as<ST>;
 
@@ -113,12 +113,14 @@ concept StorageType =
   { storage.has_child(keycont) }
   ->std::same_as<bool>;
 
+  // reference to shared_ptr is fine here because this is only used internally
+  // inside the trie.
   { storage[keycont] }
   ->std::same_as<
       std::shared_ptr<TrieNode<KeyType, KeyContent, ValueType, ST>> &>;
 
   // It doesn't really matter if we have a shared_ptr or a reference to a
-  // shared_ptr
+  // shared_ptr, because these functions are only called internally in the trie.
   { *storage.begin() }
   ->same_as_disregard_ref<
       std::shared_ptr<TrieNode<KeyType, KeyContent, ValueType, ST>>>;
@@ -132,7 +134,7 @@ concept StorageType =
       std::shared_ptr<TrieNode<KeyType, KeyContent, ValueType, ST>>>;
 };
 
-// A StorageType using a std::map.
+// A StorageType using std::map.
 template <typename KeyType, typename KeyContent, typename ValueType>
 class MapStorage {
 public:
@@ -161,10 +163,12 @@ public:
     return children[key];
   }
 
+  // Custom iterator needed since std::map<..>::iterator iterates over key-value
+  // pairs (while we want to iterate over values only).
   class Iterator {
   public:
     Iterator(
-        std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
+        typename std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
         : it(it) {}
 
     Iterator &operator++() noexcept {
@@ -176,7 +180,7 @@ public:
     std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
 
   private:
-    std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it;
+    typename std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it;
   };
 
   Iterator begin() noexcept { return Iterator(children.begin()); }
@@ -225,7 +229,7 @@ public:
 
   class Iterator {
   public:
-    Iterator(std::unordered_map<
+    Iterator(typename std::unordered_map<
              KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
         : it(it) {}
 
@@ -238,7 +242,7 @@ public:
     std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
 
   private:
-    std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator
+    typename std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator
         it;
   };
 
@@ -308,9 +312,11 @@ private:
 
 // KeyType: Type of Key
 // ValueType: Type of values
-// ConverterType: Provides functions to get symbols in the key at specific
+// Converter: Provides functions to get symbols in the key at specific
 // positions and the key's size. If none is specified, operator[] and
-// std::size() are used.
+// std::size() are used. Must adhere to concept ConverterType<KeyType>.
+// Storage: The type of storage to use. Default: MapStorage. Must adhere to
+// concept StorageType<KeyType, Converter::KeyContent, ValueType>.
 template <
     typename KeyType, typename ValueType,
     ConverterType<KeyType> Converter = DummyConverter<KeyType>,
@@ -318,13 +324,11 @@ template <
         MapStorage<KeyType, typename Converter::KeyContent, ValueType>>
 class Trie {
 private:
-  using KeyContent = Converter::KeyContent;
+  using KeyContent = typename Converter::KeyContent;
   using TrieNode_instance = TrieNode<KeyType, KeyContent, ValueType, Storage>;
-  friend class TrieNode<KeyType, KeyContent, ValueType, Storage>;
 
 public:
   class Iterator;
-  friend class Iterator;
 
   Trie() : root(std::make_shared<TrieNode_instance>(nullptr, KeyContent{})) {}
 
@@ -337,9 +341,7 @@ public:
 
   friend void swap(Trie &t1, Trie &t2) { std::swap(t1.root, t2.root); }
 
-  Trie &operator=(const Trie &other) {
-    return *this = Trie(other);
-  }
+  Trie &operator=(const Trie &other) { return *this = Trie(other); }
 
   Trie &operator=(Trie &&other) {
     swap(*this, other);
@@ -403,6 +405,7 @@ public:
     auto subroot = find_node(prefix, len);
     return Iterator(subroot);
   }
+
   Iterator subtrie_iterator(const KeyType &&prefix, std::size_t len) const {
     auto subroot = find_node(prefix, len);
     return Iterator(subroot);
@@ -410,7 +413,6 @@ public:
 
   class Iterator {
   public:
-    // no rule-of-three needed because Iterators don't own resources!
     Iterator(std::shared_ptr<TrieNode_instance> root_node)
         : current_node(leftmost_bottommost_node(root_node.get())),
           root(root_node) {}
@@ -422,8 +424,10 @@ public:
                                            current_node->elem.value());
     }
 
+    // Key at a given position may not be modified!
     KeyType key() { return current_node->key.value(); }
 
+    // A value can be modified via iterator.
     ValueType &value() { return current_node->elem.value(); }
 
     Iterator &operator++() {
@@ -466,8 +470,10 @@ public:
       next_postorder();
     }
 
-    // Returns a pointer to the leftmost-bottommost node in the structure
-    // (i.e. the one that is to be traversed first in this structure).
+    // Returns a pointer to the leftmost-bottommost node with an attached
+    // element in the structure where subroot is the root node. (i.e. the one
+    // that is to be traversed first in this structure). If there are no
+    // children, return nullptr
     static TrieNode_instance *
     leftmost_bottommost_node(TrieNode_instance *subroot) {
       if (!subroot) {
@@ -502,6 +508,10 @@ private:
     return find_node(key, Converter::size(key));
   }
 
+  // Returns a shared_ptr pointing to the node corresponding
+  // to the specified key. If no such key exists in the trie,
+  // nullptr is returned. Only the first key_size symbols of the key are
+  // considered.
   std::shared_ptr<TrieNode_instance>
   find_node(const KeyType &key, const std::size_t key_size) const {
     std::shared_ptr<TrieNode_instance> current_node = root;

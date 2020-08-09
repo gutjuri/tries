@@ -1,5 +1,5 @@
 CC=g++-10
-CFLAGS=--std=c++20 -Wall
+CFLAGS=--std=c++20 -Wextra -pedantic -Werror
 
 test_main.o: test.cpp
 	$(CC) $(CFLAGS) -O3 test.cpp -c -o test_main.o
