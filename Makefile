@@ -5,7 +5,7 @@ test_main.o: test.cpp
 	$(CC) $(CFLAGS) -O3 test.cpp -c -o test_main.o
 
 unittests: test_main.o testcases.cpp
-	#$(CC) $(CFLAGS) -o test-exe test_main.o testcases.cpp
+	$(CC) $(CFLAGS) -o test-exe test_main.o testcases.cpp
 	$(CC) $(CFLAGS) -o test-ar-exe -D TEST_USE_ARRAY test_main.o testcases.cpp
 	./test-exe
 	./test-ar-exe

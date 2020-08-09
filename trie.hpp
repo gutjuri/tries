@@ -81,6 +81,9 @@ struct TrieNode_T {
   KeyContent prefixed_by;
 };
 
+template <typename A, typename B>
+concept same_as_disregard_ref = std::same_as<A, B> || std::same_as<A, B &>;
+
 template <typename ST, typename KeyType, typename KeyContent,
           typename ValueType>
 concept StorageType =
@@ -105,14 +108,15 @@ concept StorageType =
       std::shared_ptr<TrieNode_T<KeyType, KeyContent, ValueType, ST>> &>;
 
   { *storage.begin() }
-  ->std::same_as<std::shared_ptr<TrieNode_T<KeyType, KeyContent, ValueType, ST>>>;
+  ->same_as_disregard_ref<
+      std::shared_ptr<TrieNode_T<KeyType, KeyContent, ValueType, ST>>>;
 
   { *storage.end() }
-  ->std::same_as<
+  ->same_as_disregard_ref<
       std::shared_ptr<TrieNode_T<KeyType, KeyContent, ValueType, ST>>>;
 
   { *storage.find(keycont) }
-  ->std::same_as<
+  ->same_as_disregard_ref<
       std::shared_ptr<TrieNode_T<KeyType, KeyContent, ValueType, ST>>>;
 };
 
