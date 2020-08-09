@@ -55,7 +55,7 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
     Trie<std::string, int> moved_trie = mk_trie(old_trie);
   }
 
-  SECTION("operator=") {
+  SECTION("operator= (copy)") {
     StringStringTrie trie{};
     trie.insert("A", "A");
     trie.insert("B", "B");
@@ -66,6 +66,13 @@ TEST_CASE("Constructing/copying/moving tries", "[trie constructor]") {
 
     newTrie.insert("A", "X");
     REQUIRE(newTrie.at("A") == "X");
+    REQUIRE(trie.at("A") == "A");
+  }
+
+  SECTION("operator= (move)") {
+    StringStringTrie trie{};
+    trie = StringStringTrie{};
+    trie["A"] = "A";
     REQUIRE(trie.at("A") == "A");
   }
 }
@@ -157,6 +164,7 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
         std::make_pair("ABC", "D"), std::make_pair("AB", "B"),
         std::make_pair("AC", "C"), std::make_pair("A", "A")};
     std::vector<std::pair<std::string, std::string>> received;
+    std::vector<std::pair<std::string, std::string>> received2;
 
     trie.insert("A", "A");
     trie.insert("AB", "B");
@@ -169,6 +177,14 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
     }
 
     REQUIRE(received == expected);
+
+    std::string lvalue_prefix = "A";
+
+    for (auto it = trie.subtrie_iterator(lvalue_prefix); it != trie.end();
+         ++it) {
+      received2.push_back(*it);
+    }
+    REQUIRE(received2 == expected);
 
     // Trie not deleted after the subtree is no longer visible
     REQUIRE(trie.at("ABC") == "D");
@@ -322,5 +338,13 @@ TEST_CASE("Using the non-default key-converter", "[trie converter]") {
   REQUIRE((*it).first == 100);
   ++it;
   REQUIRE(it == trie.end());
+
+  int lval_prefix = 0;
+  auto it2 = trie.subtrie_iterator(lval_prefix, 1);
+  REQUIRE((*it2).first == 0);
+  ++it2;
+  REQUIRE((*it2).first == 100);
+  ++it2;
+  REQUIRE(it2 == trie.end());
 }
 /***/

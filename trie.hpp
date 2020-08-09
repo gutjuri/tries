@@ -337,9 +337,8 @@ public:
 
   friend void swap(Trie &t1, Trie &t2) { std::swap(t1.root, t2.root); }
 
-  Trie &operator=(Trie other) {
-    swap(*this, other);
-    return *this;
+  Trie &operator=(const Trie &other) {
+    return *this = Trie(other);
   }
 
   Trie &operator=(Trie &&other) {
