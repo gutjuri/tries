@@ -262,7 +262,7 @@ public:
 
   private:
     typename InternalStorageType::iterator it;
-    typename InternalStorageType::Iterator end;
+    typename InternalStorageType::iterator end;
   };
 
   Iterator begin() noexcept {
