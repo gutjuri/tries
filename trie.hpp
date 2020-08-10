@@ -2,6 +2,7 @@
 #define TRIE_HPP
 
 #include <array>
+#include <cassert>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -18,6 +19,7 @@ template <typename KeyType> struct DummyConverter {
       typename std::remove_reference<decltype(KeyType{}[0])>::type;
 
   static KeyContent get_at_index(const KeyType &key, const std::size_t ind) {
+    assert(ind < size(key));
     return key[ind];
   }
 
@@ -35,6 +37,7 @@ struct IntBitwiseConverter {
   using KeyContent = bool;
   static KeyContent get_at_index(const int &key,
                                  const std::size_t ind) noexcept {
+    assert(ind < size(key));
     return key & (1 << ind);
   }
 
@@ -141,10 +144,14 @@ public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
                MapStorage<KeyType, KeyContent, ValueType>>;
+
+  using InternalStorageType =
+      std::map<KeyContent, std::shared_ptr<TrieNode_instance>>;
+
   MapStorage() : children() {}
   MapStorage(const MapStorage &other, TrieNode_instance *parent)
       : children([&] {
-          std::map<KeyContent, std::shared_ptr<TrieNode_instance>> new_children;
+          InternalStorageType new_children;
           for (auto x : other.children) {
             new_children[x.first] =
                 std::make_shared<TrieNode_instance>(*x.second, parent);
@@ -167,32 +174,39 @@ public:
   // pairs (while we want to iterate over values only).
   class Iterator {
   public:
-    Iterator(
-        typename std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
-        : it(it) {}
+    Iterator(typename InternalStorageType::iterator it,
+             typename InternalStorageType::iterator end)
+        : it(it), end(end) {}
 
     Iterator &operator++() noexcept {
+      assert(it != end);
       ++it;
       return *this;
     }
     bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
-    std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
+    std::shared_ptr<TrieNode_instance> operator*() {
+      assert(it != end);
+      return it->second;
+    }
 
   private:
-    typename std::map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it;
+    typename InternalStorageType::iterator it;
+    typename InternalStorageType::iterator end;
   };
 
-  Iterator begin() noexcept { return Iterator(children.begin()); }
+  Iterator begin() noexcept {
+    return Iterator(children.begin(), children.end());
+  }
 
-  Iterator end() noexcept { return Iterator(children.end()); }
+  Iterator end() noexcept { return Iterator(children.end(), children.end()); }
 
   Iterator find(KeyContent ind) noexcept {
-    return Iterator(children.find(ind));
+    return Iterator(children.find(ind), children.end());
   }
 
 private:
-  std::map<KeyContent, std::shared_ptr<TrieNode_instance>> children;
+  InternalStorageType children;
 };
 
 // Basically the same as MapStorage but using a std::unordered_map.
@@ -204,12 +218,13 @@ public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
                UnorderedMapStorage<KeyType, KeyContent, ValueType>>;
+  using InternalStorageType =
+      std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>;
   UnorderedMapStorage() : children() {}
   UnorderedMapStorage(const UnorderedMapStorage &other,
                       TrieNode_instance *parent)
       : children([&] {
-          std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>
-              new_children;
+          InternalStorageType new_children;
           for (auto x : other.children) {
             new_children[x.first] =
                 std::make_shared<TrieNode_instance>(*x.second, parent);
@@ -229,33 +244,39 @@ public:
 
   class Iterator {
   public:
-    Iterator(typename std::unordered_map<
-             KeyContent, std::shared_ptr<TrieNode_instance>>::iterator it)
-        : it(it) {}
+    Iterator(typename InternalStorageType::iterator it,
+             typename InternalStorageType::iterator end)
+        : it(it), end(end) {}
 
     Iterator &operator++() noexcept {
+      assert(it != end);
       ++it;
       return *this;
     }
     bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
-    std::shared_ptr<TrieNode_instance> operator*() { return it->second; }
+    std::shared_ptr<TrieNode_instance> operator*() {
+      assert(it != end);
+      return it->second;
+    }
 
   private:
-    typename std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>>::iterator
-        it;
+    typename InternalStorageType::iterator it;
+    typename InternalStorageType::Iterator end;
   };
 
-  Iterator begin() noexcept { return Iterator(children.begin()); }
+  Iterator begin() noexcept {
+    return Iterator(children.begin(), children.end());
+  }
 
-  Iterator end() noexcept { return Iterator(children.end()); }
+  Iterator end() noexcept { return Iterator(children.end(), children.end()); }
 
   Iterator find(KeyContent ind) noexcept {
-    return Iterator(children.find(ind));
+    return Iterator(children.find(ind), children.end());
   }
 
 private:
-  std::unordered_map<KeyContent, std::shared_ptr<TrieNode_instance>> children;
+  InternalStorageType children;
 };
 
 // A StorageType using std::array. Generally speaking, an ArrayStorage has less
@@ -271,11 +292,13 @@ public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
                ArrayStorage<KeyType, KeyContent, ValueType, size>>;
+  using InternalStorageType = std::array<std::shared_ptr<TrieNode_instance>, size>;
+
   ArrayStorage() : children() {}
 
   ArrayStorage(const ArrayStorage &other, TrieNode_instance *parent)
       : children([&] {
-          std::array<std::shared_ptr<TrieNode_instance>, size> new_children;
+          InternalStorageType new_children;
           for (std::size_t i = 0; i < other.children.size(); ++i) {
             if (!other.children[i]) {
               continue;
@@ -307,7 +330,7 @@ public:
   }
 
 private:
-  std::array<std::shared_ptr<TrieNode_instance>, size> children;
+  InternalStorageType children;
 };
 
 // KeyType: Type of Key
@@ -412,20 +435,26 @@ public:
         : current_node(leftmost_bottommost_node(root_node.get())),
           root(root_node) {}
 
-    Iterator() : current_node(nullptr) {}
+    Iterator() : current_node(nullptr), root(nullptr) {}
 
     std::pair<KeyType, ValueType> operator*() {
+      assert(current_node);
       return std::pair<KeyType, ValueType>(current_node->key.value(),
                                            current_node->elem.value());
     }
 
     // Key at a given position may not be modified!
-    KeyType key() { return current_node->key.value(); }
+    KeyType key() { 
+      assert(current_node);
+      return current_node->key.value(); }
 
     // A value can be modified via iterator.
-    ValueType &value() { return current_node->elem.value(); }
+    ValueType &value() { 
+      assert(current_node);
+      return current_node->elem.value(); }
 
     Iterator &operator++() {
+      assert(current_node);
       advance();
       return *this;
     }
