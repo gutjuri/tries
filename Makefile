@@ -15,6 +15,11 @@ unittests_cov: test_main.o
 	./test-exe
 	gcov testcases >/dev/null
 	cat trie.hpp.gcov
+	$(CC) $(CFLAGS) --coverage -D TEST_USE_ARRAY -o test-arr-exe test_main.o testcases.cpp
+	./test-arr-exe
+	gcov testcases >/dev/null
+	cat trie.hpp.gcov
+
 
 bm_bins: test_main.o benchmark-trie.cpp trie.hpp
 	$(CC) $(CFLAGS) -O3 -o benchmark-trie-exe test_main.o benchmark-trie.cpp

@@ -233,6 +233,10 @@ TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
     REQUIRE(trie.at("A") == "A");
     REQUIRE(trie.at("B") == "B");
     REQUIRE(trie.at("AB") == "AB");
+
+    std::string lvalue_key = "A";
+    REQUIRE(trie.at(lvalue_key) == "A");
+
   }
 
   SECTION("Query for elements that are not there") {

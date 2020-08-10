@@ -377,11 +377,6 @@ public:
     return insert_at_node->elem;
   }
 
-  const std::optional<ValueType> &operator[](KeyType key) const {
-    std::shared_ptr<TrieNode_instance> insert_at_node = mk_path_to_node(key);
-    return insert_at_node->elem;
-  }
-
   bool has_key(const KeyType &key) const {
     std::shared_ptr<TrieNode_instance> target_node = find_node(key);
     return target_node && target_node->elem.has_value();
