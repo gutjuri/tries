@@ -285,14 +285,15 @@ private:
 // The template-parameter size must be equal to the size of the set of possible
 // KeyContents (e.g. 256 when KeyContent is char and every char may appear in
 // the key).
-template <typename KeyType, typename KeyContent, typename ValueType,
-          std::size_t size>
+template <typename KeyType, std::convertible_to<std::size_t> KeyContent,
+          typename ValueType, std::size_t size>
 class ArrayStorage {
 public:
   using TrieNode_instance =
       TrieNode<KeyType, KeyContent, ValueType,
                ArrayStorage<KeyType, KeyContent, ValueType, size>>;
-  using InternalStorageType = std::array<std::shared_ptr<TrieNode_instance>, size>;
+  using InternalStorageType =
+      std::array<std::shared_ptr<TrieNode_instance>, size>;
 
   ArrayStorage() : children() {}
 
@@ -313,10 +314,12 @@ public:
 
   ArrayStorage &operator=(const ArrayStorage &other) = delete;
 
-  bool has_child(KeyContent key) const { return children.at(key) != nullptr; }
+  bool has_child(KeyContent key) const {
+    return children.at(static_cast<std::size_t>(key)) != nullptr;
+  }
 
   std::shared_ptr<TrieNode_instance> &operator[](KeyContent key) {
-    return children.at(key);
+    return children.at(static_cast<std::size_t>(key));
   }
 
   std::shared_ptr<TrieNode_instance> *begin() noexcept {
@@ -325,8 +328,8 @@ public:
 
   std::shared_ptr<TrieNode_instance> *end() noexcept { return children.end(); }
 
-  std::shared_ptr<TrieNode_instance> *find(KeyContent ind) {
-    return &children.at(ind);
+  std::shared_ptr<TrieNode_instance> *find(KeyContent key) {
+    return &children.at(static_cast<std::size_t>(key));
   }
 
 private:
@@ -444,14 +447,16 @@ public:
     }
 
     // Key at a given position may not be modified!
-    KeyType key() { 
+    KeyType key() {
       assert(current_node);
-      return current_node->key.value(); }
+      return current_node->key.value();
+    }
 
     // A value can be modified via iterator.
-    ValueType &value() { 
+    ValueType &value() {
       assert(current_node);
-      return current_node->elem.value(); }
+      return current_node->elem.value();
+    }
 
     Iterator &operator++() {
       assert(current_node);
