@@ -186,9 +186,24 @@ TEST_CASE("Iterating over a trie", "[trie iterator]") {
     }
     REQUIRE(received2 == expected);
 
-    // Trie not deleted after the subtree is no longer visible
+    // Trie not deleted after the subtree iterator is no longer visible
     REQUIRE(trie.at("ABC") == "D");
   }
+
+  SECTION("Iterate on non-existent prefix-subtree") {
+    StringStringTrie trie{};
+
+    trie.insert("A", "A");
+    trie.insert("AB", "B");
+    trie.insert("AC", "C");
+    trie.insert("ABC", "D");
+    trie.insert("X", "X");
+
+    auto it = trie.subtrie_iterator("I like Haskell");
+
+    REQUIRE(it == trie.end());
+  }
+
   SECTION("Iterating with an explicitly named iterator") {
     std::vector<std::pair<std::string, std::string>> results{};
     for (auto it = trie.begin(); it != trie.end(); ++it) {
@@ -236,7 +251,6 @@ TEST_CASE("Retrieve elements from trie", "[trie retrieve]") {
 
     std::string lvalue_key = "A";
     REQUIRE(trie.at(lvalue_key) == "A");
-
   }
 
   SECTION("Query for elements that are not there") {
@@ -335,11 +349,11 @@ TEST_CASE("Using the non-default key-converter", "[trie converter]") {
   REQUIRE(trie[100] == "C");
   REQUIRE(trie[123873] == "D");
 
-  // iterate over all even keys
+  // iterate over all even keys, i.e. all keys starting with bit 0
   auto it = trie.subtrie_iterator(0, 1);
   REQUIRE((*it).first == 0);
   ++it;
-  REQUIRE((*it).first == 100);
+  REQUIRE(it.key() == 100);
   ++it;
   REQUIRE(it == trie.end());
 

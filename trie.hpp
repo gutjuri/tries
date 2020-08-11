@@ -19,7 +19,8 @@ template <typename KeyType> struct DummyConverter {
       typename std::remove_reference<decltype(KeyType{}[0])>::type;
 
   static KeyContent get_at_index(const KeyType &key, const std::size_t ind) {
-    assert(ind < size(key));
+    // no bounds check necessary because we only use this function internally
+    // and guarantee that ind < size(key).
     return key[ind];
   }
 
@@ -37,7 +38,8 @@ struct IntBitwiseConverter {
   using KeyContent = bool;
   static KeyContent get_at_index(const int &key,
                                  const std::size_t ind) noexcept {
-    assert(ind < size(key));
+    // no bounds check necessary because we only use this function internally
+    // and guarantee that ind < size(key).
     return key & (1 << ind);
   }
 
@@ -113,6 +115,7 @@ concept StorageType =
   }
   ->std::same_as<ST>;
 
+  // is there a child for a given symbol?
   { storage.has_child(keycont) }
   ->std::same_as<bool>;
 
@@ -179,14 +182,16 @@ public:
         : it(it), end(end) {}
 
     Iterator &operator++() noexcept {
-      assert(it != end);
+      // no bounds check necessary because we only use this function internally
+      // and guarantee that no UB can occur.
       ++it;
       return *this;
     }
     bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
     std::shared_ptr<TrieNode_instance> operator*() {
-      assert(it != end);
+      // no bounds check necessary because we only use this function internally
+      // and guarantee that no UB can occur.
       return it->second;
     }
 
@@ -249,14 +254,16 @@ public:
         : it(it), end(end) {}
 
     Iterator &operator++() noexcept {
-      assert(it != end);
+      // no bounds check necessary because we only use this function internally
+      // and guarantee that no UB can occur.
       ++it;
       return *this;
     }
     bool operator!=(const Iterator &other) noexcept { return it != other.it; }
 
     std::shared_ptr<TrieNode_instance> operator*() {
-      assert(it != end);
+      // no bounds check necessary because we only use this function internally
+      // and guarantee that no UB can occur.
       return it->second;
     }
 
@@ -280,7 +287,7 @@ private:
 };
 
 // A StorageType using std::array. Generally speaking, an ArrayStorage has less
-// efficient memory usage than a MapStorage but has much better performance in
+// efficient memory usage than a MapStorage but much better performance in
 // some cases. See the benchmarks for details.
 // The template-parameter size must be equal to the size of the set of possible
 // KeyContents (e.g. 256 when KeyContent is char and every char may appear in
@@ -322,6 +329,9 @@ public:
     return children.at(static_cast<std::size_t>(key));
   }
 
+  // No custom iterator type that performs bounds checking needed: We are
+  // certain that invalid iterators are never dereferenced, because we only use
+  // them internally (Trie::leftmost_bottommost_node()).
   std::shared_ptr<TrieNode_instance> *begin() noexcept {
     return children.begin();
   }
@@ -412,6 +422,7 @@ public:
 
   Iterator end() { return Iterator(); }
 
+  // note that this also works if there is no node with the given prefix.
   Iterator subtrie_iterator(const KeyType &prefix) const {
     auto subroot = find_node(prefix);
     return Iterator(subroot);
@@ -433,15 +444,14 @@ public:
   }
 
   class Iterator {
+    friend class Trie<KeyType, ValueType, Converter, Storage>;
   public:
-    Iterator(std::shared_ptr<TrieNode_instance> root_node)
-        : current_node(leftmost_bottommost_node(root_node.get())),
-          root(root_node) {}
-
-    Iterator() : current_node(nullptr), root(nullptr) {}
-
     std::pair<KeyType, ValueType> operator*() {
       assert(current_node);
+
+      // it is not necessary to check if the optionals key and elem actually
+      // contain values, because in operator++ we guarantee that only entries
+      // containing a value (and thereby also a key) are visited.
       return std::pair<KeyType, ValueType>(current_node->key.value(),
                                            current_node->elem.value());
     }
@@ -471,6 +481,12 @@ public:
     bool operator!=(const Iterator &other) const { return !(*this == other); }
 
   private:
+    Iterator(std::shared_ptr<TrieNode_instance> root_node)
+        : current_node(leftmost_bottommost_node(root_node.get())),
+          root(root_node) {}
+
+    Iterator() : current_node(nullptr), root(nullptr) {}
+
     void advance() { next_postorder(); }
 
     void next_postorder() {
@@ -479,9 +495,10 @@ public:
         return;
       }
 
+      // go to parent; find the leftmost node in all subtries to the right that
+      // has a value.
       auto child_it =
           current_node->parent->children.find(current_node->prefixed_by);
-
       ++child_it;
       for (; child_it != current_node->parent->children.end(); ++child_it) {
         TrieNode_instance *next = leftmost_bottommost_node((*child_it).get());
@@ -491,10 +508,14 @@ public:
         }
       }
 
+      // if there is no node in the subtries to the right with a value, go to
+      // parent.
       if (current_node->parent->elem.has_value()) {
         current_node = current_node->parent;
         return;
       }
+
+      // if parent has no value either, go one step up and continue search.
       current_node = current_node->parent;
       next_postorder();
     }
