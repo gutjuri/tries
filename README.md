@@ -2,6 +2,15 @@
 
 Tries in C++
 
+## Directory structure
+
+* benchmark contains benchmark results.
+* catch2 contains the library used for testing
+* res contains benchmark data
+* trie.hpp is the main header file
+* test.cpp and testcases.cpp contain test cases
+* benchmark-trie.cpp contains benchmark cases
+
 ## Usage & Requirements
 
 ### Usage only
