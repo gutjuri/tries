@@ -8,10 +8,35 @@
 #include <memory>
 #include <optional>
 
+template <typename A, typename B>
+concept same_as_disregard_ref =
+    std::same_as<A, B> || std::same_as<A, B &> || std::same_as<A &, B>;
+
+// A naturally suited trie key type must support the default constructor,
+// operator[] and std::size(KeyType).
+template <typename KeyType,
+          // We use the second parameter because it's not possible to have a
+          // "using" statement inside a concept. This parameter is not supposed
+          // to be bound by users.
+          typename KeyContent =
+              typename std::remove_reference<decltype(KeyType{}[0])>::type>
+concept NaturallySuitedTrieKeyType = requires(KeyType &key, std::size_t ind) {
+  {
+    KeyType {}
+  }
+  ->std::same_as<KeyType>;
+
+  { key[ind] }
+  ->same_as_disregard_ref<KeyContent>;
+
+  { std::size(key) }
+  ->std::same_as<std::size_t>;
+};
+
 // Default converter that is used for all KeyTypes that are
 // naturally suited to be keys in a trie. This includes all keys that support
 // size() and operator[].
-template <typename KeyType> struct DummyConverter {
+template <NaturallySuitedTrieKeyType KeyType> struct DummyConverter {
   // KeyContent is the type of the symbols in the key.
   // For example, if the key is a std::string, then KeyContent is char.
   // If the key is a vector<int>, then KeyContent is int.
@@ -49,11 +74,13 @@ struct IntBitwiseConverter {
 };
 
 // A converter lets the trie view some object as a sequence of symbols.
-// It must provide methods to aquire the symbol at a certain position and the
+// It must provide methods to acquire the symbol at a certain position and the
 // key's size. Further it must provide the data-type that symbols have
 // (KeyContent).
 template <typename C, typename KeyType>
 concept ConverterType = requires(const KeyType &key, const std::size_t ind) {
+  typename C::KeyContent;
+
   { C::size(key) }
   ->std::same_as<std::size_t>;
 
@@ -89,10 +116,6 @@ struct TrieNode {
   TrieNode_instance *parent;
   KeyContent prefixed_by;
 };
-
-// When we don't care if we have a reference or not.
-template <typename A, typename B>
-concept same_as_disregard_ref = std::same_as<A, B> || std::same_as<A, B &>;
 
 // A StorageType is a type that a TrieNode can use to store pointers to its
 // children.
@@ -424,27 +447,28 @@ public:
 
   // note that this also works if there is no node with the given prefix.
   Iterator subtrie_iterator(const KeyType &prefix) const {
-    auto subroot = find_node(prefix);
+    std::shared_ptr<TrieNode_instance> subroot = find_node(prefix);
     return Iterator(subroot);
   }
 
   Iterator subtrie_iterator(const KeyType &&prefix) const {
-    auto subroot = find_node(prefix);
+    std::shared_ptr<TrieNode_instance> subroot = find_node(prefix);
     return Iterator(subroot);
   }
 
   Iterator subtrie_iterator(const KeyType &prefix, std::size_t len) const {
-    auto subroot = find_node(prefix, len);
+    std::shared_ptr<TrieNode_instance> subroot = find_node(prefix, len);
     return Iterator(subroot);
   }
 
   Iterator subtrie_iterator(const KeyType &&prefix, std::size_t len) const {
-    auto subroot = find_node(prefix, len);
+    std::shared_ptr<TrieNode_instance> subroot = find_node(prefix, len);
     return Iterator(subroot);
   }
 
   class Iterator {
     friend class Trie<KeyType, ValueType, Converter, Storage>;
+
   public:
     std::pair<KeyType, ValueType> operator*() {
       assert(current_node);
@@ -456,7 +480,6 @@ public:
                                            current_node->elem.value());
     }
 
-    // Key at a given position may not be modified!
     KeyType key() {
       assert(current_node);
       return current_node->key.value();
