@@ -13,6 +13,8 @@ Tries in C++
 
 ## Usage & Requirements
 
+This work is licensed under GNU-GPL 2.0; see [LICENSE.txt](LICENSE.txt) for more information.
+
 ### Usage only
 
 Since this is a header-only library, it is enough to include trie.hpp into the file you want to use tries in!
@@ -31,3 +33,11 @@ Further it is necessary that gcc is used because we compare the library at hand 
 The performance-benchmarks can be executed with `make benchmark`.
 The memory-benchmarks can be executed with `make benchmark_memory`.
 The results can be found in benchmark/ (I tested on an Intel Core i7 from 2012).
+Here are my results for the performance benchmarks:
+
+![bm1](benchmark/bm1.png)
+
+![bm2](benchmark/bm2.png)
+
+This library is listed in four different configurations and compared to `std::map` and `__gnu_pbds::trie` [A GNU trie implementation](https://gcc.gnu.org/onlinedocs/libstdc++/ext/pb_ds/trie_based_containers.html).
+
