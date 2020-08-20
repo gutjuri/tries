@@ -39,5 +39,5 @@ Here are my results for the performance benchmarks:
 
 ![bm2](benchmark/bm2.png)
 
-This library is listed in four different configurations and compared to `std::map` and `__gnu_pbds::trie` [A GNU trie implementation](https://gcc.gnu.org/onlinedocs/libstdc++/ext/pb_ds/trie_based_containers.html).
+This library is listed in four different configurations and compared to `std::map` and `__gnu_pbds::trie` ([A GNU trie implementation](https://gcc.gnu.org/onlinedocs/libstdc++/ext/pb_ds/trie_based_containers.html)).
 
